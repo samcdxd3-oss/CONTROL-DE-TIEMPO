@@ -309,14 +309,10 @@ function viewLogin(){
     <div class="card">
       <div class="login-logo">👩‍⚕️</div>
       <h2 class="center">Ingreso de personal</h2>
-      <p class="muted center small">Selecciona tu nombre e ingresa tu código para registrar tus actividades del turno.</p>
+      <p class="muted center small">Selecciona tu nombre para registrar tus actividades del turno.</p>
       <div class="field">
         <label>Nombre</label>
         <select id="loginPersonal">${opts || '<option value="">(sin personal registrado)</option>'}</select>
-      </div>
-      <div class="field">
-        <label>Código personal</label>
-        <input id="loginCodigo" type="password" inputmode="numeric" placeholder="Ej. 1001" autocomplete="off">
       </div>
       <button class="btn btn-block" id="btnLoginEnfermero">Ingresar</button>
       <p id="loginError" class="small" style="color:var(--danger); display:none; margin-top:8px;">Código incorrecto.</p>
@@ -600,12 +596,13 @@ function renderModal(){
 function bindViewEvents(){
   // Login enfermero
   const btnLoginEnf = document.getElementById('btnLoginEnfermero');
+  // TEMP-TEST: código de personal desactivado para pruebas. Para reactivarlo,
+  // vuelve a poner la validación "if(p && p.codigo === code){ ... } else { ... }"
   if(btnLoginEnf){
     btnLoginEnf.onclick = ()=>{
       const pid = document.getElementById('loginPersonal').value;
-      const code = document.getElementById('loginCodigo').value.trim();
       const p = STATE.personal.find(x=>x.id===pid);
-      if(p && p.codigo === code){
+      if(p){
         SESSION = { tipo:'enfermero', personalId:p.id };
         draft = null;
         goto('registro');
@@ -615,7 +612,9 @@ function bindViewEvents(){
     };
   }
   const btnGoLic = document.getElementById('btnGoLic');
-  if(btnGoLic) btnGoLic.onclick = ()=> goto('licLogin');
+  // TEMP-TEST: PIN de licenciada desactivado para pruebas. Para reactivarlo,
+  // vuelve a poner: btnGoLic.onclick = ()=> goto('licLogin');
+  if(btnGoLic) btnGoLic.onclick = ()=>{ SESSION = { tipo:'licenciada' }; goto('licDash'); };
   const btnBackLogin = document.getElementById('btnBackLogin');
   if(btnBackLogin) btnBackLogin.onclick = ()=> goto('login');
   const btnLoginLic = document.getElementById('btnLoginLic');
