@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Control de Productividad - UCI Enfermería</title>
+<style>
+
+:root{
+  --bg:#f4f6f8; --panel:#ffffff; --text:#1c2530; --muted:#6b7686; --border:#e1e6eb;
+  --primary:#2563a8; --primary-dark:#1c4c82; --primary-light:#e8f0fa;
+  --ok:#1e8a5f; --ok-bg:#e5f6ee; --warn:#b8860b; --warn-bg:#fdf3d8; --danger:#c0392b; --danger-bg:#fbe8e6;
+  --radius:12px; --shadow:0 1px 3px rgba(20,30,50,.08), 0 1px 2px rgba(20,30,50,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.45; -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,h4{margin:0 0 .5em 0; font-weight:600;}
+p{margin:.3em 0;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit; font-size:15px;}
+#topbar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between;
+  background:var(--primary); color:#fff; padding:10px 16px; box-shadow:var(--shadow);
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand-icon{font-size:26px;}
+.brand-title{font-weight:700; font-size:16px;}
+.brand-sub{font-size:12px; opacity:.85;}
+.user-badge{display:flex; align-items:center; gap:10px; font-size:13px;}
+.user-badge.hidden{display:none;}
+#main{max-width:920px; margin:0 auto; padding:14px 12px 60px;}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow);}
+.card h2{font-size:17px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+@media(max-width:520px){.grid2{grid-template-columns:1fr;}}
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:.02em;}
+.field input, .field select{
+  width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:#fff; color:var(--text);
+}
+.field input:focus, .field select:focus{outline:2px solid var(--primary-light); border-color:var(--primary);}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:11px 18px; border-radius:9px; border:1px solid transparent; font-weight:600; font-size:14.5px;
+  background:var(--primary); color:#fff; transition:filter .1s;
+}
+.btn:hover{filter:brightness(1.06);}
+.btn:active{filter:brightness(.94);}
+.btn-block{width:100%;}
+.btn-secondary{background:#fff; color:var(--primary); border:1px solid var(--primary);}
+.btn-ghost{background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5);}
+.btn-outline{background:#fff; color:var(--text); border:1px solid var(--border);}
+.btn-danger{background:var(--danger); color:#fff;}
+.btn-sm{padding:6px 10px; font-size:12.5px;}
+.btn:disabled{opacity:.45; cursor:not-allowed;}
+.tabs{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px;}
+.tab{padding:9px 14px; border-radius:20px; background:#fff; border:1px solid var(--border); color:var(--muted); font-weight:600; font-size:13.5px; white-space:nowrap;}
+.tab.active{background:var(--primary); color:#fff; border-color:var(--primary);}
+.muted{color:var(--muted);}
+.small{font-size:12.5px;}
+.center{text-align:center;}
+.row{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+.chip{display:inline-block; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700;}
+.chip-ok{background:var(--ok-bg); color:var(--ok);}
+.chip-warn{background:var(--warn-bg); color:var(--warn);}
+.chip-danger{background:var(--danger-bg); color:var(--danger);}
+.chip-muted{background:#eef1f4; color:var(--muted);}
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--border);}
+th{color:var(--muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.02em;}
+tr:last-child td{border-bottom:none;}
+.table-wrap{overflow-x:auto;}
+.item-line{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); gap:8px;}
+.item-line:last-child{border-bottom:none;}
+.item-main{flex:1; min-width:0;}
+.item-name{font-weight:600; font-size:14px;}
+.item-meta{font-size:12px; color:var(--muted);}
+.item-sub{font-weight:700; color:var(--primary); white-space:nowrap;}
+.total-box{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-radius:var(--radius); margin-top:8px;}
+.total-box.ok{background:var(--ok-bg); color:var(--ok);}
+.total-box.warn{background:var(--warn-bg); color:var(--warn);}
+.total-box.danger{background:var(--danger-bg); color:var(--danger);}
+.total-box .t-label{font-size:12.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+.total-box .t-value{font-size:26px; font-weight:800;}
+.total-box .t-pct{font-size:13px; font-weight:700;}
+.progress{height:8px; border-radius:6px; background:#e4e8ec; overflow:hidden; margin-top:8px;}
+.progress > div{height:100%; border-radius:6px;}
+.fab-add{position:sticky; bottom:12px; margin-top:10px;}
+.stepper{display:flex; align-items:center; gap:10px;}
+.stepper button{width:38px; height:38px; border-radius:9px; border:1px solid var(--border); background:#fff; font-size:18px; font-weight:700;}
+.stepper input{width:60px; text-align:center; padding:8px 4px;}
+.modal-overlay{position:fixed; inset:0; background:rgba(15,25,40,.5); display:flex; align-items:flex-end; justify-content:center; z-index:100;}
+@media(min-width:640px){.modal-overlay{align-items:center;}}
+.modal{background:#fff; width:100%; max-width:560px; max-height:88vh; overflow-y:auto; border-radius:16px 16px 0 0; padding:18px;}
+@media(min-width:640px){.modal{border-radius:16px;}}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.close-x{background:none; border:none; font-size:22px; color:var(--muted); padding:2px 8px;}
+.search-box{width:100%; padding:11px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:10px;}
+.chipbar{display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; margin-bottom:6px;}
+.chipbar .chip-cat{white-space:nowrap; padding:6px 12px; border-radius:16px; border:1px solid var(--border); background:#fff; font-size:12.5px; font-weight:600; color:var(--muted);}
+.chipbar .chip-cat.active{background:var(--primary-light); color:var(--primary-dark); border-color:var(--primary);}
+.act-list{max-height:44vh; overflow-y:auto; border:1px solid var(--border); border-radius:10px;}
+.act-item{padding:11px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.act-item:last-child{border-bottom:none;}
+.act-item:active{background:var(--primary-light);}
+.act-item .an{font-size:13.5px; font-weight:600;}
+.act-item .at{font-size:11.5px; color:var(--muted);}
+.grado-btns{display:flex; gap:8px; margin:10px 0;}
+.grado-btns button{flex:1; padding:12px 4px; border-radius:9px; border:1px solid var(--border); background:#fff; font-weight:700;}
+.grado-btns button.sel{background:var(--primary); color:#fff; border-color:var(--primary);}
+.grado-btns button small{display:block; font-weight:500; font-size:11px; margin-top:2px;}
+.empty-state{text-align:center; padding:30px 10px; color:var(--muted);}
+.empty-state .ico{font-size:36px; margin-bottom:6px;}
+.login-wrap{max-width:400px; margin:40px auto;}
+.login-logo{text-align:center; font-size:44px; margin-bottom:6px;}
+.link-btn{background:none; border:none; color:var(--primary); font-weight:600; font-size:13.5px; padding:6px;}
+.summary-cards{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;}
+@media(max-width:640px){.summary-cards{grid-template-columns:repeat(2,1fr);}}
+.stat-card{background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center;}
+.stat-card .num{font-size:22px; font-weight:800; color:var(--primary-dark);}
+.stat-card .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; margin-top:2px;}
+.toast{position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-60px); background:#1c2530; color:#fff; padding:10px 18px; border-radius:10px; font-size:13.5px; z-index:200; transition:transform .25s; box-shadow:var(--shadow);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.subtabs{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px;}
+.subtabs button{padding:7px 12px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:12.5px; font-weight:600; color:var(--muted);}
+.subtabs button.active{background:var(--text); color:#fff; border-color:var(--text);}
+.form-row{display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;}
+.badge-origen{font-size:10px; padding:1px 7px; border-radius:8px; background:#eef1f4; color:var(--muted); margin-left:6px;}
+.clickable{cursor:pointer;}
+.dim{opacity:.55;}
+footer.appfoot{text-align:center; color:var(--muted); font-size:12px; padding:18px 10px 40px;}
+hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
+.inline-edit input{width:64px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center;}
+
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+<header id="topbar">
+  <div class="brand">
+    <span class="brand-icon">🩺</span>
+    <div>
+      <div class="brand-title">Productividad UCI</div>
+      <div class="brand-sub" id="brandSub">Registro de actividades de enfermería</div>
+    </div>
+  </div>
+  <div id="userBadge" class="user-badge hidden">
+    <span id="userBadgeName"></span>
+    <button id="btnLogout" class="btn btn-ghost btn-sm">Salir</button>
+  </div>
+</header>
+<main id="main"></main>
+<div id="modalRoot"></div>
+<script>
+/* ======================================================================
+   Control de Productividad UCI - Enfermería
+   App 100% cliente (sin backend). Datos en localStorage del navegador.
+   ====================================================================== */
+
+const CATALOGO_SEED = [{"id": "2-control-de-s-v", "nombre": "Control de Signos Vitales", "actividades": [{"id": "2-control-de-s-v-p-a", "nombre": "P/A", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-p-fc", "nombre": "P - FC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-fr", "nombre": "FR", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-t", "nombre": "T°", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-sp02", "nombre": "SP02", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-control-del-dolor", "nombre": "Control del dolor", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "2-control-de-s-v-valoracion-glasgow", "nombre": "Valoracion glasgow", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "2-control-de-s-v-higiene-integral-del-paciente", "nombre": "Higiene Integral del Paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "2-control-de-s-v-limpieza-cavidad-oral", "nombre": "Limpieza Cavidad Oral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}]}, {"id": "3-aministracion-de-tto", "nombre": "Administración de Tratamiento", "actividades": [{"id": "3-aministracion-de-tto-oral", "nombre": "Oral", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sublingual", "nombre": "Sublingual", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 4, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-parenteral-id", "nombre": "Parenteral - Intradérmica (ID)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sc", "nombre": "Parenteral - Subcutánea (SC)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-im", "nombre": "Parenteral - Intramuscular (IM)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-ev", "nombre": "Parenteral - Endovenosa (EV)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-por-sng", "nombre": "Por SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-oticos-nasales-oftalmicos", "nombre": "Oticos, nasales, oftalmicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "3-aministracion-de-tto-topico", "nombre": "Tópico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 20}}, {"id": "3-aministracion-de-tto-rectal-vaginal", "nombre": "Rectal Vaginal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-inhalatoria", "nombre": "Inhalatoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-fluidos-endovenosos", "nombre": "Fluidos endovenosos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "3-aministracion-de-tto-fluidos-especiales", "nombre": "Fluidos especiales", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "3-aministracion-de-tto-infusion", "nombre": "Infusion", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}, {"id": "3-aministracion-de-tto-nutricion-parenteral", "nombre": "Nutricion parenteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "3-aministracion-de-tto-nutricion-enteral", "nombre": "Nutricion enteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "4-procedimientos", "nombre": "Procedimientos", "actividades": [{"id": "4-procedimientos-via-periferica", "nombre": "Vía Periferica", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-toma-de-muestra-aga-elec", "nombre": "Toma de muestra: AGA/ELEC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-control-pvc", "nombre": "Control PVC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-transfusion-sanguinea", "nombre": "Transfusión sanguinea", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plasma", "nombre": "Transfusión de  Plasma", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plaquetas", "nombre": "Transfusión de  Plaquetas", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-toma-de-ecg", "nombre": "Toma de ECG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 20, "grado3": 25}}, {"id": "4-procedimientos-oxigenoterapia", "nombre": "Oxigenoterapia", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-aspiracion-de-secreciones", "nombre": "Aspiración de secreciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-ventiloterapia-vent-mecanico", "nombre": "Ventiloterapia: vent. Mecanico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "4-procedimientos-bh", "nombre": "BH", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-nebulizaciones", "nombre": "Nebulizaciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-fisioterapia-respiratoria", "nombre": "Fisioterapia Respiratoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-drenaje-postural", "nombre": "Drenaje postural", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-de-sonda-naso-yeyuno", "nombre": "Lavado de Sonda naso yeyuno", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 6, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-gastrico", "nombre": "Lavado gástrico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-lavado-vesical", "nombre": "Lavado vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-manejo-de-via-aerea-tet", "nombre": "Manejo de vía aérea: TET", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tqt", "nombre": "Manejo de vía aérea - TQT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tubo-ot", "nombre": "Manejo de vía aérea - Tubo OT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-cateterismo-vesical", "nombre": "Cateterismo - Vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-sng", "nombre": "Cateterismo - SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-rectal", "nombre": "Cateterismo - Rectal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-curacion-de-via-perif", "nombre": "Curacion de Vía Perif.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-curacion-via-central", "nombre": "Curacion Vía central", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-hemoglucotex", "nombre": "Hemoglucotex", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-asistencia-en-instalac-avc", "nombre": "Asistencia en instalac.AVC", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-prueba-cruzada", "nombre": "Prueba cruzada", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-toma-muestra-sangre", "nombre": "Toma muestra Sangre", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-desarmado-de-vm", "nombre": "Desarmado de VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-desind-y-empaque-vm", "nombre": "Desind. y empaque VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-armado-y-operat-vm", "nombre": "Armado y operat. VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-muestra-aspirado-traqueal", "nombre": "Muestra Aspirado traqueal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-via-periferica", "nombre": "Retiro de via periferica", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 4}, {"id": "4-procedimientos-cuidado-de-via-aerea-tet", "nombre": "Cuidado de vía aérea: TET", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-sonda-foley", "nombre": "Retiro de sonda foley", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "5-monitoreo-hemodinamico", "nombre": "Monitoreo Hemodinámico", "actividades": [{"id": "5-monitoreo-hemodinamico-cardiaco", "nombre": "Cardiaco", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "5-monitoreo-hemodinamico-respiratorio", "nombre": "Respiratorio", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "5-monitoreo-hemodinamico-neurologico", "nombre": "Neurológico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}]}, {"id": "6-atenc-enf-en-emergencia", "nombre": "Atención de Enfermería en Emergencia", "actividades": [{"id": "6-atenc-enf-en-emergencia-r-c-p", "nombre": "R.C.P.", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 30}}, {"id": "6-atenc-enf-en-emergencia-hemoptisis", "nombre": "Hemoptisis", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 10}}, {"id": "6-atenc-enf-en-emergencia-convulsiones", "nombre": "Convulsiones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 20, "grado3": 20}}, {"id": "6-atenc-enf-en-emergencia-shock-h-c-n-a", "nombre": "Shock  (H, C, N, A)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 40}}]}, {"id": "7-otras-activ-asistenciales", "nombre": "Otras Actividades Asistenciales", "actividades": [{"id": "7-otras-activ-asistenciales-hospitalizacion-servicios-sop", "nombre": "Hospitalizacion.: Servicios,SOP", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-particip-exam-auxiliares-rx", "nombre": "Particip. Exam. auxiliares:Rx…", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-traslado-asist-intrahospitalario", "nombre": "Traslado asist. intrahospitalario", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 20}}, {"id": "7-otras-activ-asistenciales-reporter-de-enfermeria", "nombre": "Reporter de Enfermería", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-registro-proceso-soapie", "nombre": "Registro:PROCESO/SOAPIE", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-supervision-tec-estud-inter", "nombre": "Supervisión Téc./Estud./Inter...", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-particip-en-procedim-medicos", "nombre": "Particip. en procedim. Médicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-traslado-asist-extrahospitalario", "nombre": "Traslado asist. Extrahospitalario", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}]}, {"id": "8-funcion-administrativa", "nombre": "Función Administrativa", "actividades": [{"id": "8-funcion-administrativa-paso-visita-con-medico", "nombre": "Paso visita con medico", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-ingreso-paciente", "nombre": "Tramite ingreso paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-tramite-alta-paciente", "nombre": "Tramite alta paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-registro-y-pegado-de-resultados", "nombre": "Registro y pegado de resultados", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 1}, {"id": "8-funcion-administrativa-actualizacion-de-pizarras", "nombre": "Actualizacion de pizarras", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 2}, {"id": "8-funcion-administrativa-preparacion-de-hcl", "nombre": "Preparacion de HCl.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-coord-transf-referecia", "nombre": "Coord. Transf/ referecia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-educacion-al-paciente", "nombre": "Educacion al paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-educacion-a-la-familia", "nombre": "Educacion a la familia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-valoracion-riesgo-caidas", "nombre": "Valoracion Riesgo Caidas", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-caida-de-paciente", "nombre": "Caida de paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-valoracion-riesgo-upp", "nombre": "Valoracion riesgo UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-upp", "nombre": "Paciente con UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-flebitis", "nombre": "Paciente con flebitis", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-monitoreo-de-actividades-asist", "nombre": "Monitoreo de actividades asist.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-supervision-al-personal", "nombre": "Supervision  al  personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-distribucion-del-personal", "nombre": "Distribucion del personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-orientacion-estudiantes-pers-nuevo", "nombre": "Orientacion estudiantes /pers. Nuevo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-elab-de-roles-de-trabajo", "nombre": "Elab. De roles de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-reunion-de-trabajo", "nombre": "Reunión de Trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reunion-de-capacitacion", "nombre": "Reunión de Capacitación", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reuniones-de-equipo", "nombre": "Reuniones de Equipo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reporte-de-accidentes-de-trabajo", "nombre": "Reporte de accidentes de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-doc-intrainstitucional-estudiantil", "nombre": "Doc. Intrainstitucional estudiantil", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-docencia-extrainstitucional", "nombre": "Docencia extrainstitucional", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-otras-act-de-ensenanza-aprendiz", "nombre": "Otras act. De enseñanza/aprendiz", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-administrativo-de-documentos", "nombre": "Trámite administrativo de documentos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}]}];
+const PERSONAL_SEED = [{"nombres": "Dina", "apellidos": "Aguilar", "cargo": "Enfermera", "id": "p1", "codigo": "1001", "activo": true}, {"nombres": "Yolanda", "apellidos": "Chacolla", "cargo": "Administradora", "id": "p2", "codigo": "1002", "activo": true}, {"nombres": "Juana", "apellidos": "Fernández", "cargo": "Enfermera", "id": "p3", "codigo": "1003", "activo": true}, {"nombres": "Roberto", "apellidos": "Guevara Arredondo", "cargo": "Enfermero", "id": "p4", "codigo": "1004", "activo": true}, {"nombres": "Enoc", "apellidos": "López", "cargo": "Enfermero", "id": "p5", "codigo": "1005", "activo": true}, {"nombres": "Julia", "apellidos": "Roque", "cargo": "Enfermera", "id": "p6", "codigo": "1006", "activo": true}, {"nombres": "Mariela", "apellidos": "Sánchez", "cargo": "Enfermera", "id": "p7", "codigo": "1007", "activo": true}, {"nombres": "Miguel Augusto", "apellidos": "Solórzano Durán", "cargo": "Enfermero", "id": "p8", "codigo": "1008", "activo": true}, {"nombres": "Dóris Candelaria", "apellidos": "Ticona Salcedo", "cargo": "Enfermera", "id": "p9", "codigo": "1009", "activo": true}, {"nombres": "Marina", "apellidos": "Vera", "cargo": "Enfermera", "id": "p10", "codigo": "1010", "activo": true}, {"nombres": "Ana", "apellidos": "Vizcarra", "cargo": "Enfermera", "id": "p11", "codigo": "1011", "activo": true}, {"nombres": "Moisés", "apellidos": "Yabar", "cargo": "Enfermero", "id": "p12", "codigo": "1012", "activo": true}, {"nombres": "Glenda", "apellidos": "Morris Flores", "cargo": "Enfermera", "id": "p13", "codigo": "1013", "activo": true}];
+const STORAGE_KEY = 'uci_productividad_v1';
+const SCHEMA_VERSION = 1;
+
+/* ---------------------------- Utilidades ---------------------------- */
+function uid(prefix){ return (prefix||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+function todayISO(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtFechaLarga(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return d + ' ' + meses[m-1] + ' ' + y;
+}
+function minToHHMM(min){
+  min = Math.round(min||0);
+  const h = Math.floor(min/60), m = min%60;
+  return h + 'h ' + String(m).padStart(2,'0') + 'm';
+}
+function minToHM(min){
+  min = Math.round(min||0);
+  const h = Math.floor(min/60), m = min%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function csvEscape(v){
+  v = String(v==null?'':v);
+  if(/[",\n;]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime || 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+
+/* ------------------------------ Estado ------------------------------- */
+let STATE = null;
+
+function defaultState(){
+  return {
+    version: SCHEMA_VERSION,
+    personal: JSON.parse(JSON.stringify(PERSONAL_SEED)),
+    catalogo: JSON.parse(JSON.stringify(CATALOGO_SEED)),
+    registros: [],
+    config: {
+      horasTurnoGD: 12,
+      horasTurnoGN: 12,
+      pinLicenciada: '2015',
+      margenAlerta: 0.90
+    }
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){ STATE = defaultState(); saveState(); return; }
+    STATE = JSON.parse(raw);
+    if(!STATE.config) STATE.config = defaultState().config;
+    if(!STATE.personal) STATE.personal = JSON.parse(JSON.stringify(PERSONAL_SEED));
+    if(!STATE.catalogo) STATE.catalogo = JSON.parse(JSON.stringify(CATALOGO_SEED));
+    if(!STATE.registros) STATE.registros = [];
+  }catch(e){
+    console.error('Error cargando datos, se reinicia almacenamiento local', e);
+    STATE = defaultState();
+    saveState();
+  }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+}
+
+/* --------------------------- Sesión actual --------------------------- */
+let SESSION = null; // { tipo:'enfermero', personalId } | { tipo:'licenciada' }
+
+function turnoHoras(turno){
+  return turno === 'GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+}
+
+/* ------------------------------ Router -------------------------------- */
+let VIEW = 'login';
+let VIEWPARAMS = {};
+
+function goto(view, params){
+  VIEW = view; VIEWPARAMS = params || {};
+  render();
+  window.scrollTo(0,0);
+}
+
+function updateTopbar(){
+  const badge = document.getElementById('userBadge');
+  const name = document.getElementById('userBadgeName');
+  const sub = document.getElementById('brandSub');
+  if(!SESSION){
+    badge.classList.add('hidden');
+    sub.textContent = 'Registro de actividades de enfermería';
+  } else if(SESSION.tipo === 'enfermero'){
+    const p = STATE.personal.find(x=>x.id===SESSION.personalId);
+    badge.classList.remove('hidden');
+    name.textContent = p ? (p.nombres+' '+p.apellidos) : '';
+    sub.textContent = 'Mi turno';
+  } else {
+    badge.classList.remove('hidden');
+    name.textContent = 'Panel Licenciada';
+    sub.textContent = 'Supervisión y reportes';
+  }
+}
+
+document.getElementById('btnLogout').addEventListener('click', ()=>{
+  SESSION = null;
+  goto('login');
+});
+
+/* ------------------------------ Render -------------------------------- */
+function render(){
+  updateTopbar();
+  const main = document.getElementById('main');
+  if(VIEW === 'login') main.innerHTML = viewLogin();
+  else if(VIEW === 'registro') main.innerHTML = viewRegistro();
+  else if(VIEW === 'historial') main.innerHTML = viewHistorial();
+  else if(VIEW === 'licLogin') main.innerHTML = viewLicLogin();
+  else if(VIEW === 'licDash') main.innerHTML = viewLicenciada();
+  bindViewEvents();
+}
+
+/* ============================== LOGIN ================================ */
+function viewLogin(){
+  const activos = STATE.personal.filter(p=>p.activo);
+  const opts = activos.map(p=>`<option value="${p.id}">${escapeHtml(p.nombres+' '+p.apellidos)}</option>`).join('');
+  return `
+  <div class="login-wrap">
+    <div class="card">
+      <div class="login-logo">👩‍⚕️</div>
+      <h2 class="center">Ingreso de personal</h2>
+      <p class="muted center small">Selecciona tu nombre e ingresa tu código para registrar tus actividades del turno.</p>
+      <div class="field">
+        <label>Nombre</label>
+        <select id="loginPersonal">${opts || '<option value="">(sin personal registrado)</option>'}</select>
+      </div>
+      <div class="field">
+        <label>Código personal</label>
+        <input id="loginCodigo" type="password" inputmode="numeric" placeholder="Ej. 1001" autocomplete="off">
+      </div>
+      <button class="btn btn-block" id="btnLoginEnfermero">Ingresar</button>
+      <p id="loginError" class="small" style="color:var(--danger); display:none; margin-top:8px;">Código incorrecto.</p>
+    </div>
+    <div class="center">
+      <button class="link-btn" id="btnGoLic">Soy la Licenciada / Supervisora →</button>
+    </div>
+  </div>`;
+}
+
+function viewLicLogin(){
+  return `
+  <div class="login-wrap">
+    <div class="card">
+      <div class="login-logo">🔐</div>
+      <h2 class="center">Panel de la Licenciada</h2>
+      <p class="muted center small">Ingresa el PIN de supervisión para ver los reportes de todo el personal.</p>
+      <div class="field">
+        <label>PIN</label>
+        <input id="licPin" type="password" inputmode="numeric" autocomplete="off">
+      </div>
+      <button class="btn btn-block" id="btnLoginLic">Ingresar</button>
+      <p id="licError" class="small" style="color:var(--danger); display:none; margin-top:8px;">PIN incorrecto.</p>
+    </div>
+    <div class="center">
+      <button class="link-btn" id="btnBackLogin">← Volver al ingreso de personal</button>
+    </div>
+  </div>`;
+}
+
+/* ============================ REGISTRO ================================ */
+let draft = null; // { fecha, turno, items:[] }
+
+function ensureDraft(){
+  if(!draft){
+    draft = { fecha: todayISO(), turno: 'GD', items: [] };
+  }
+}
+
+function draftTotal(){
+  return draft.items.reduce((s,i)=>s+i.subtotal,0);
+}
+
+function viewRegistro(){
+  ensureDraft();
+  const p = STATE.personal.find(x=>x.id===SESSION.personalId);
+  const total = draftTotal();
+  const horasEstandar = turnoHoras(draft.turno);
+  const pct = horasEstandar>0 ? (total/60)/horasEstandar : 0;
+  let boxClass = 'ok', msg = 'Dentro de lo esperado';
+  if(pct >= 1){ boxClass='danger'; msg='¡Supera el tiempo estándar del turno!'; }
+  else if(pct >= (STATE.config.margenAlerta||0.9)){ boxClass='warn'; msg='Cerca del límite del turno'; }
+
+  const itemsHtml = draft.items.length ? draft.items.map(it => `
+    <div class="item-line">
+      <div class="item-main">
+        <div class="item-name">${escapeHtml(it.actividadNombre)} ${it.grado ? `<span class="badge-origen">Grado ${it.grado.replace('grado','')}</span>` : ''}</div>
+        <div class="item-meta">${escapeHtml(it.categoriaNombre)} · ${it.cantidad} × ${it.tiempoUnit} min</div>
+      </div>
+      <div class="item-sub">${it.subtotal} min</div>
+      <button class="btn btn-outline btn-sm" data-remove-item="${it.id}">✕</button>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="ico">📋</div>Aún no agregas actividades.<br>Toca "+ Agregar actividad" para empezar.</div>`;
+
+  return `
+  <div class="card">
+    <div class="row">
+      <h2>Turno de ${escapeHtml(p ? p.nombres : '')}</h2>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="date" id="draftFecha" value="${draft.fecha}">
+      </div>
+      <div class="field">
+        <label>Turno</label>
+        <select id="draftTurno">
+          <option value="GD" ${draft.turno==='GD'?'selected':''}>Diurno (GD)</option>
+          <option value="GN" ${draft.turno==='GN'?'selected':''}>Nocturno (GN)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h2>Actividades del turno</h2><span class="muted small">${draft.items.length} registradas</span></div>
+    <div>${itemsHtml}</div>
+    <button class="btn btn-secondary btn-block fab-add" id="btnAddActividad">+ Agregar actividad</button>
+  </div>
+
+  <div class="total-box ${boxClass}">
+    <div>
+      <div class="t-label">Total del turno</div>
+      <div class="t-value">${minToHHMM(total)}</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="t-pct">${Math.round(pct*100)}% de ${horasEstandar}h</div>
+      <div class="small">${msg}</div>
+    </div>
+  </div>
+  <div class="progress"><div style="width:${Math.min(pct*100,100)}%; background:${boxClass==='danger'?'var(--danger)':boxClass==='warn'?'var(--warn)':'var(--ok)'};"></div></div>
+
+  <div class="card" style="margin-top:14px;">
+    <button class="btn btn-block" id="btnGuardarTurno">💾 Guardar registro del turno</button>
+    <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnVerHistorial">Ver mis registros anteriores</button>
+  </div>
+  `;
+}
+
+function viewHistorial(){
+  const p = STATE.personal.find(x=>x.id===SESSION.personalId);
+  const mine = STATE.registros.filter(r=>r.personalId===SESSION.personalId).sort((a,b)=> b.fecha.localeCompare(a.fecha) || (b.creado-a.creado));
+  const rows = mine.map(r=>{
+    const horasEstandar = r.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+    const pct = horasEstandar>0 ? (r.totalMin/60)/horasEstandar : 0;
+    const chip = pct>=1 ? 'chip-danger' : (pct>=(STATE.config.margenAlerta||0.9) ? 'chip-warn' : 'chip-ok');
+    return `<tr class="clickable" data-view-registro="${r.id}">
+      <td>${fmtFechaLarga(r.fecha)}</td>
+      <td>${r.turno==='GD'?'Diurno':'Nocturno'}</td>
+      <td>${minToHM(r.totalMin)}</td>
+      <td><span class="chip ${chip}">${Math.round(pct*100)}%</span></td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="card">
+    <button class="link-btn" id="btnBackRegistro">← Volver al registro actual</button>
+    <h2>Mis registros — ${escapeHtml(p?p.nombres+' '+p.apellidos:'')}</h2>
+    ${mine.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Turno</th><th>Total</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="empty-state"><div class="ico">🗂️</div>Todavía no tienes turnos guardados.</div>`}
+  </div>
+  <div id="registroDetalle"></div>
+  `;
+}
+
+/* --------------------------- Modal: agregar actividad --------------------------- */
+let modalState = { open:false, categoriaId:null, query:'', actividad:null, grado:null, cantidad:1 };
+
+function openAddModal(){
+  modalState = { open:true, categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:null, cantidad:1 };
+  renderModal();
+}
+function closeModal(){
+  modalState.open = false;
+  document.getElementById('modalRoot').innerHTML = '';
+}
+
+function activityTime(act, grado){
+  if(act.gradoDependiente) return act.tiempos[grado] != null ? act.tiempos[grado] : null;
+  return act.tiempoFijo;
+}
+
+function renderModal(){
+  const root = document.getElementById('modalRoot');
+  if(!modalState.open){ root.innerHTML=''; return; }
+
+  if(!modalState.actividad){
+    // Step 1: choose category + activity
+    const cats = STATE.catalogo;
+    const chipbar = cats.map(c=>`<button class="chip-cat ${c.id===modalState.categoriaId?'active':''}" data-cat="${c.id}">${escapeHtml(c.nombre)}</button>`).join('');
+    let acts = [];
+    cats.forEach(c=>{ c.actividades.forEach(a=>{ if(a.activa!==false) acts.push({...a, categoriaId:c.id, categoriaNombre:c.nombre}); }); });
+    if(modalState.query.trim()){
+      const q = modalState.query.trim().toLowerCase();
+      acts = acts.filter(a=>a.nombre.toLowerCase().includes(q));
+    } else {
+      acts = acts.filter(a=>a.categoriaId===modalState.categoriaId);
+    }
+    const list = acts.map(a=>{
+      const timeLabel = a.gradoDependiente ? 'Según grado del paciente' : (a.tiempoFijo+' min estándar');
+      return `<div class="act-item clickable" data-pick-act="${a.id}" data-pick-cat="${a.categoriaId}">
+        <div><div class="an">${escapeHtml(a.nombre)}</div><div class="at">${escapeHtml(timeLabel)}</div></div>
+        <div class="muted">›</div>
+      </div>`;
+    }).join('') || `<div class="empty-state small">Sin resultados.</div>`;
+
+    root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-head"><h3>Agregar actividad</h3><button class="close-x" id="modalClose">×</button></div>
+        <input class="search-box" id="modalSearch" placeholder="Buscar actividad..." value="${escapeHtml(modalState.query)}">
+        ${modalState.query.trim() ? '' : `<div class="chipbar">${chipbar}</div>`}
+        <div class="act-list">${list}</div>
+      </div>
+    </div>`;
+  } else {
+    // Step 2: grado (if applicable) + cantidad
+    const a = modalState.actividad;
+    const needsGrado = a.gradoDependiente;
+    let gradoBtns = '';
+    if(needsGrado){
+      gradoBtns = `<div class="grado-btns">` + ['grado1','grado2','grado3'].map(g=>{
+        const t = a.tiempos[g];
+        if(t==null) return '';
+        return `<button class="${modalState.grado===g?'sel':''}" data-grado="${g}">Grado ${g.slice(-1)}<small>${t} min</small></button>`;
+      }).join('') + `</div>`;
+    }
+    const tiempoUnit = needsGrado ? (modalState.grado ? a.tiempos[modalState.grado] : null) : a.tiempoFijo;
+    const subtotal = tiempoUnit!=null ? tiempoUnit*modalState.cantidad : null;
+
+    root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
+        <p class="muted small">${escapeHtml(a.categoriaNombre)}</p>
+        ${needsGrado ? `<label class="small" style="font-weight:700;">¿Grado del paciente?</label>${gradoBtns}` : `<p>Tiempo estándar: <b>${a.tiempoFijo} min</b></p>`}
+        <div class="field" style="margin-top:12px;">
+          <label>Cantidad de veces realizada</label>
+          <div class="stepper">
+            <button id="qtyMinus">−</button>
+            <input id="qtyInput" type="number" min="1" value="${modalState.cantidad}">
+            <button id="qtyPlus">+</button>
+          </div>
+        </div>
+        <div class="total-box ok" style="margin-top:10px;">
+          <div class="t-label">Subtotal</div>
+          <div class="t-value">${subtotal!=null ? subtotal+' min' : '—'}</div>
+        </div>
+        <button class="btn btn-block" style="margin-top:14px;" id="btnConfirmAdd" ${ (needsGrado && !modalState.grado) ? 'disabled' : ''}>Agregar al turno</button>
+        <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnBackToList">← Elegir otra actividad</button>
+      </div>
+    </div>`;
+  }
+
+  // bind modal events
+  const overlay = document.getElementById('modalOverlay');
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
+  const closeBtn = document.getElementById('modalClose');
+  if(closeBtn) closeBtn.onclick = closeModal;
+
+  const search = document.getElementById('modalSearch');
+  if(search){
+    search.oninput = (e)=>{ modalState.query = e.target.value; renderModal(); const el=document.getElementById('modalSearch'); if(el){el.focus(); el.setSelectionRange(el.value.length, el.value.length);} };
+  }
+  document.querySelectorAll('[data-cat]').forEach(el=>{
+    el.onclick = ()=>{ modalState.categoriaId = el.getAttribute('data-cat'); renderModal(); };
+  });
+  document.querySelectorAll('[data-pick-act]').forEach(el=>{
+    el.onclick = ()=>{
+      const actId = el.getAttribute('data-pick-act');
+      const catId = el.getAttribute('data-pick-cat');
+      const cat = STATE.catalogo.find(c=>c.id===catId);
+      const act = cat.actividades.find(x=>x.id===actId);
+      modalState.actividad = {...act, categoriaId:cat.id, categoriaNombre:cat.nombre};
+      modalState.grado = null; modalState.cantidad = 1;
+      renderModal();
+    };
+  });
+  const backBtn = document.getElementById('btnBackToList');
+  if(backBtn) backBtn.onclick = ()=>{ modalState.actividad=null; renderModal(); };
+
+  document.querySelectorAll('[data-grado]').forEach(el=>{
+    el.onclick = ()=>{ modalState.grado = el.getAttribute('data-grado'); renderModal(); };
+  });
+  const qtyInput = document.getElementById('qtyInput');
+  if(qtyInput){
+    qtyInput.onchange = ()=>{ modalState.cantidad = Math.max(1, parseInt(qtyInput.value)||1); renderModal(); };
+    document.getElementById('qtyMinus').onclick = ()=>{ modalState.cantidad = Math.max(1, modalState.cantidad-1); renderModal(); };
+    document.getElementById('qtyPlus').onclick = ()=>{ modalState.cantidad = modalState.cantidad+1; renderModal(); };
+  }
+  const confirmBtn = document.getElementById('btnConfirmAdd');
+  if(confirmBtn){
+    confirmBtn.onclick = ()=>{
+      const a = modalState.actividad;
+      const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
+      draft.items.push({
+        id: uid('it'),
+        categoriaId: a.categoriaId, categoriaNombre: a.categoriaNombre,
+        actividadId: a.id, actividadNombre: a.nombre,
+        grado: a.gradoDependiente ? modalState.grado : null,
+        cantidad: modalState.cantidad, tiempoUnit: tiempoUnit,
+        subtotal: tiempoUnit*modalState.cantidad
+      });
+      closeModal();
+      render();
+      toast('Actividad agregada');
+    };
+  }
+}
+
+/* ============================ EVENTOS VISTA ============================ */
+function bindViewEvents(){
+  // Login enfermero
+  const btnLoginEnf = document.getElementById('btnLoginEnfermero');
+  if(btnLoginEnf){
+    btnLoginEnf.onclick = ()=>{
+      const pid = document.getElementById('loginPersonal').value;
+      const code = document.getElementById('loginCodigo').value.trim();
+      const p = STATE.personal.find(x=>x.id===pid);
+      if(p && p.codigo === code){
+        SESSION = { tipo:'enfermero', personalId:p.id };
+        draft = null;
+        goto('registro');
+      } else {
+        document.getElementById('loginError').style.display='block';
+      }
+    };
+  }
+  const btnGoLic = document.getElementById('btnGoLic');
+  if(btnGoLic) btnGoLic.onclick = ()=> goto('licLogin');
+  const btnBackLogin = document.getElementById('btnBackLogin');
+  if(btnBackLogin) btnBackLogin.onclick = ()=> goto('login');
+  const btnLoginLic = document.getElementById('btnLoginLic');
+  if(btnLoginLic){
+    btnLoginLic.onclick = ()=>{
+      const pin = document.getElementById('licPin').value.trim();
+      if(pin === STATE.config.pinLicenciada){
+        SESSION = { tipo:'licenciada' };
+        goto('licDash');
+      } else {
+        document.getElementById('licError').style.display='block';
+      }
+    };
+  }
+
+  // Registro
+  const draftFecha = document.getElementById('draftFecha');
+  if(draftFecha) draftFecha.onchange = ()=>{ draft.fecha = draftFecha.value; };
+  const draftTurno = document.getElementById('draftTurno');
+  if(draftTurno) draftTurno.onchange = ()=>{ draft.turno = draftTurno.value; render(); };
+  document.querySelectorAll('[data-remove-item]').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.getAttribute('data-remove-item');
+      draft.items = draft.items.filter(i=>i.id!==id);
+      render();
+    };
+  });
+  const btnAddAct = document.getElementById('btnAddActividad');
+  if(btnAddAct) btnAddAct.onclick = openAddModal;
+  const btnGuardar = document.getElementById('btnGuardarTurno');
+  if(btnGuardar){
+    btnGuardar.onclick = ()=>{
+      if(draft.items.length===0){ toast('Agrega al menos una actividad'); return; }
+      const p = STATE.personal.find(x=>x.id===SESSION.personalId);
+      STATE.registros.push({
+        id: uid('reg'),
+        personalId: p.id, personalNombre: p.nombres+' '+p.apellidos,
+        fecha: draft.fecha, turno: draft.turno,
+        items: draft.items, totalMin: draftTotal(),
+        creado: Date.now(), actualizado: Date.now()
+      });
+      saveState();
+      draft = null;
+      toast('Turno guardado correctamente');
+      goto('historial');
+    };
+  }
+  const btnVerHist = document.getElementById('btnVerHistorial');
+  if(btnVerHist) btnVerHist.onclick = ()=> goto('historial');
+  const btnBackReg = document.getElementById('btnBackRegistro');
+  if(btnBackReg) btnBackReg.onclick = ()=> goto('registro');
+
+  document.querySelectorAll('[data-view-registro]').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.getAttribute('data-view-registro');
+      const r = STATE.registros.find(x=>x.id===id);
+      showRegistroDetalle(r, 'registroDetalle');
+    };
+  });
+
+  bindLicenciadaEvents();
+}
+
+function showRegistroDetalle(r, targetId){
+  const el = document.getElementById(targetId);
+  if(!el || !r) return;
+  const rows = r.items.map(it=>`<tr>
+      <td>${escapeHtml(it.categoriaNombre)}</td>
+      <td>${escapeHtml(it.actividadNombre)}${it.grado?' (G'+it.grado.slice(-1)+')':''}</td>
+      <td>${it.cantidad}</td>
+      <td>${it.tiempoUnit}</td>
+      <td>${it.subtotal}</td>
+    </tr>`).join('');
+  el.innerHTML = `
+  <div class="card">
+    <h3>Detalle — ${fmtFechaLarga(r.fecha)} (${r.turno==='GD'?'Diurno':'Nocturno'})</h3>
+    <p class="muted small">${escapeHtml(r.personalNombre||'')}</p>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Cant.</th><th>Min/u</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p style="margin-top:10px;"><b>Total: ${minToHHMM(r.totalMin)}</b></p>
+  </div>`;
+}
+
+/* ============================ LICENCIADA =============================== */
+let licTab = 'resumen';
+let licFiltro = { desde: null, hasta: null, turno: 'todos', personalId: 'todos' };
+
+function firstDayOfMonthISO(){
+  const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
+}
+function ensureLicFiltro(){
+  if(!licFiltro.desde) licFiltro.desde = firstDayOfMonthISO();
+  if(!licFiltro.hasta) licFiltro.hasta = todayISO();
+}
+
+function filteredRegistros(){
+  ensureLicFiltro();
+  return STATE.registros.filter(r=>{
+    if(r.fecha < licFiltro.desde || r.fecha > licFiltro.hasta) return false;
+    if(licFiltro.turno!=='todos' && r.turno!==licFiltro.turno) return false;
+    if(licFiltro.personalId!=='todos' && r.personalId!==licFiltro.personalId) return false;
+    return true;
+  }).sort((a,b)=> b.fecha.localeCompare(a.fecha));
+}
+
+function viewLicenciada(){
+  ensureLicFiltro();
+  const tabs = [
+    ['resumen','Resumen por turno'],
+    ['actividad','Por actividad'],
+    ['personal','Personal'],
+    ['catalogo','Catálogo'],
+    ['config','Configuración']
+  ];
+  const subtabs = tabs.map(([k,l])=>`<button class="${licTab===k?'active':''}" data-lic-tab="${k}">${l}</button>`).join('');
+
+  let body = '';
+  if(licTab==='resumen') body = licResumen();
+  else if(licTab==='actividad') body = licPorActividad();
+  else if(licTab==='personal') body = licPersonal();
+  else if(licTab==='catalogo') body = licCatalogo();
+  else if(licTab==='config') body = licConfig();
+
+  return `
+  <div class="subtabs">${subtabs}</div>
+  ${body}
+  `;
+}
+
+function licFiltrosHtml(){
+  const opts = STATE.personal.map(p=>`<option value="${p.id}" ${licFiltro.personalId===p.id?'selected':''}>${escapeHtml(p.nombres+' '+p.apellidos)}</option>`).join('');
+  return `
+  <div class="card">
+    <div class="form-row">
+      <div class="field" style="flex:1; min-width:130px;"><label>Desde</label><input type="date" id="filDesde" value="${licFiltro.desde}"></div>
+      <div class="field" style="flex:1; min-width:130px;"><label>Hasta</label><input type="date" id="filHasta" value="${licFiltro.hasta}"></div>
+      <div class="field" style="flex:1; min-width:130px;"><label>Turno</label>
+        <select id="filTurno">
+          <option value="todos" ${licFiltro.turno==='todos'?'selected':''}>Todos</option>
+          <option value="GD" ${licFiltro.turno==='GD'?'selected':''}>Diurno</option>
+          <option value="GN" ${licFiltro.turno==='GN'?'selected':''}>Nocturno</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1; min-width:160px;"><label>Personal</label>
+        <select id="filPersonal"><option value="todos">Todos</option>${opts}</select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function licResumen(){
+  const regs = filteredRegistros();
+  const margen = STATE.config.margenAlerta || 0.9;
+  let exceso=0, deficitFuerte=0, totalMin=0;
+  const rows = regs.map(r=>{
+    const horasEstandar = r.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+    const pct = horasEstandar>0 ? (r.totalMin/60)/horasEstandar : 0;
+    totalMin += r.totalMin;
+    let chip = 'chip-ok', estado='OK';
+    if(pct>=1){ chip='chip-danger'; estado='Excede turno'; exceso++; }
+    else if(pct>=margen){ chip='chip-warn'; estado='Cerca del límite'; }
+    else if(pct<0.5){ chip='chip-muted'; estado='Muy por debajo'; deficitFuerte++; }
+    return {r, pct, html:`<tr class="clickable" data-lic-detalle="${r.id}">
+      <td>${escapeHtml(r.personalNombre)}</td>
+      <td>${fmtFechaLarga(r.fecha)}</td>
+      <td>${r.turno==='GD'?'Diurno':'Nocturno'}</td>
+      <td>${minToHM(r.totalMin)}</td>
+      <td>${horasEstandar}h</td>
+      <td><span class="chip ${chip}">${Math.round(pct*100)}% ${estado}</span></td>
+    </tr>`};
+  });
+  rows.sort((a,b)=>b.pct-a.pct);
+  const tableRows = rows.map(x=>x.html).join('') || `<tr><td colspan="6" class="empty-state">Sin registros en el rango seleccionado.</td></tr>`;
+
+  return `
+  ${licFiltrosHtml()}
+  <div class="summary-cards">
+    <div class="stat-card"><div class="num">${regs.length}</div><div class="lbl">Turnos registrados</div></div>
+    <div class="stat-card"><div class="num">${minToHHMM(totalMin)}</div><div class="lbl">Horas totales</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--danger)">${exceso}</div><div class="lbl">Turnos con exceso</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--muted)">${deficitFuerte}</div><div class="lbl">Muy por debajo (&lt;50%)</div></div>
+  </div>
+  <div class="card">
+    <div class="row"><h2>Detalle por enfermero y turno</h2>
+      <div>
+        <button class="btn btn-outline btn-sm" id="btnExportCsvDetalle">Exportar CSV detalle</button>
+        <button class="btn btn-outline btn-sm" id="btnExportCsvResumen">Exportar CSV resumen</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Personal</th><th>Fecha</th><th>Turno</th><th>Total</th><th>Turno estándar</th><th>Estado</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+  </div>
+  <div id="licDetalleBox"></div>
+  `;
+}
+
+function licPorActividad(){
+  const regs = filteredRegistros();
+  const map = {};
+  regs.forEach(r=> r.items.forEach(it=>{
+    const key = it.categoriaNombre+' | '+it.actividadNombre+(it.grado?(' (G'+it.grado.slice(-1)+')'):'');
+    if(!map[key]) map[key] = {categoria: it.categoriaNombre, actividad: it.actividadNombre, grado: it.grado, cantidad:0, minutos:0};
+    map[key].cantidad += it.cantidad;
+    map[key].minutos += it.subtotal;
+  }));
+  const arr = Object.values(map).sort((a,b)=>b.minutos-a.minutos);
+  const rows = arr.map(x=>`<tr>
+    <td>${escapeHtml(x.categoria)}</td>
+    <td>${escapeHtml(x.actividad)}${x.grado?' (G'+x.grado.slice(-1)+')':''}</td>
+    <td>${x.cantidad}</td>
+    <td>${minToHM(x.minutos)}</td>
+  </tr>`).join('') || `<tr><td colspan="4" class="empty-state">Sin datos en el rango seleccionado.</td></tr>`;
+  return `
+  ${licFiltrosHtml()}
+  <div class="card">
+    <h2>Tiempo total por actividad</h2>
+    <p class="muted small">Muestra qué actividades consumen más tiempo del equipo en el periodo filtrado.</p>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Cant. total</th><th>Tiempo total</th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+
+function licPersonal(){
+  const rows = STATE.personal.map(p=>`
+    <tr>
+      <td>${escapeHtml(p.nombres)}</td>
+      <td>${escapeHtml(p.apellidos)}</td>
+      <td>${escapeHtml(p.cargo||'')}</td>
+      <td class="inline-edit"><input data-edit-codigo="${p.id}" value="${escapeHtml(p.codigo)}"></td>
+      <td><input type="checkbox" data-toggle-activo="${p.id}" ${p.activo?'checked':''}></td>
+      <td><button class="btn btn-outline btn-sm" data-del-personal="${p.id}">Eliminar</button></td>
+    </tr>`).join('');
+  return `
+  <div class="card">
+    <h2>Personal registrado</h2>
+    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cargo</th><th>Código</th><th>Activo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Agregar personal</h2>
+    <div class="grid2">
+      <div class="field"><label>Nombres</label><input id="npNombres"></div>
+      <div class="field"><label>Apellidos</label><input id="npApellidos"></div>
+      <div class="field"><label>Cargo</label><input id="npCargo" placeholder="Enfermera / Enfermero / Técnico"></div>
+      <div class="field"><label>Código</label><input id="npCodigo" placeholder="Ej. 1014"></div>
+    </div>
+    <button class="btn" id="btnAddPersonal">+ Agregar</button>
+  </div>`;
+}
+
+function licCatalogo(){
+  const sections = STATE.catalogo.map(cat=>{
+    const rows = cat.actividades.map(a=>{
+      if(a.gradoDependiente){
+        return `<tr>
+          <td>${escapeHtml(a.nombre)} <span class="badge-origen">${a.origen}</span></td>
+          <td class="inline-edit"><input type="number" min="0" data-cat="${cat.id}" data-act="${a.id}" data-grado="grado1" value="${a.tiempos.grado1 ?? ''}"></td>
+          <td class="inline-edit"><input type="number" min="0" data-cat="${cat.id}" data-act="${a.id}" data-grado="grado2" value="${a.tiempos.grado2 ?? ''}"></td>
+          <td class="inline-edit"><input type="number" min="0" data-cat="${cat.id}" data-act="${a.id}" data-grado="grado3" value="${a.tiempos.grado3 ?? ''}"></td>
+          <td><button class="btn btn-outline btn-sm" data-del-act="${cat.id}|${a.id}">Eliminar</button></td>
+        </tr>`;
+      }
+      return `<tr>
+        <td>${escapeHtml(a.nombre)} <span class="badge-origen">${a.origen}</span></td>
+        <td class="inline-edit" colspan="3"><input type="number" min="0" data-cat="${cat.id}" data-act="${a.id}" data-grado="fijo" value="${a.tiempoFijo ?? ''}"> min (tiempo fijo)</td>
+        <td><button class="btn btn-outline btn-sm" data-del-act="${cat.id}|${a.id}">Eliminar</button></td>
+      </tr>`;
+    }).join('');
+    return `<div class="card">
+      <h3>${escapeHtml(cat.nombre)}</h3>
+      <div class="table-wrap"><table><thead><tr><th>Actividad</th><th>Grado 1</th><th>Grado 2</th><th>Grado 3</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <hr class="sep">
+      <div class="form-row">
+        <div class="field" style="flex:2; min-width:180px;"><label>Nueva actividad</label><input id="newAct_${cat.id}" placeholder="Nombre de la actividad"></div>
+        <div class="field" style="width:110px;"><label>Tipo</label>
+          <select id="newActTipo_${cat.id}"><option value="fijo">Tiempo fijo</option><option value="grado">Según grado</option></select>
+        </div>
+        <div class="field" style="width:200px;" id="newActTiempos_${cat.id}"><label>Minutos</label><input id="newActMin_${cat.id}" type="number" min="0" placeholder="min"></div>
+        <button class="btn btn-sm" data-add-act="${cat.id}">+ Añadir</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="card"><p class="muted small">Ajusta aquí los tiempos estandarizados del catálogo. Los cambios se aplican de inmediato a los nuevos registros (los turnos ya guardados no se modifican).</p></div>
+  ${sections}`;
+}
+
+function licConfig(){
+  const c = STATE.config;
+  return `
+  <div class="card">
+    <h2>Configuración del turno</h2>
+    <div class="grid2">
+      <div class="field"><label>Horas turno Diurno (GD)</label><input id="cfgGD" type="number" min="1" value="${c.horasTurnoGD}"></div>
+      <div class="field"><label>Horas turno Nocturno (GN)</label><input id="cfgGN" type="number" min="1" value="${c.horasTurnoGN}"></div>
+      <div class="field"><label>Umbral de alerta (%)</label><input id="cfgMargen" type="number" min="1" max="100" value="${Math.round(c.margenAlerta*100)}"></div>
+      <div class="field"><label>PIN de la Licenciada</label><input id="cfgPin" value="${escapeHtml(c.pinLicenciada)}"></div>
+    </div>
+    <button class="btn" id="btnSaveConfig">Guardar configuración</button>
+  </div>
+  <div class="card">
+    <h2>Respaldo de datos</h2>
+    <p class="muted small">Esta app guarda todo en el navegador de este equipo. Usa estas opciones para respaldar, restaurar o consolidar registros hechos en otro dispositivo (por ejemplo, un celular).</p>
+    <div class="form-row">
+      <button class="btn btn-outline btn-sm" id="btnExportBackup">⬇️ Exportar copia completa (JSON)</button>
+      <button class="btn btn-outline btn-sm" id="btnImportBackup">⬆️ Importar / consolidar JSON</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none;">
+    </div>
+  </div>
+  <div class="card">
+    <h2 style="color:var(--danger)">Zona de riesgo</h2>
+    <button class="btn btn-danger" id="btnResetAll">Borrar todos los datos de este navegador</button>
+  </div>`;
+}
+
+/* ---------------------------- Eventos licenciada ---------------------------- */
+function bindLicenciadaEvents(){
+  document.querySelectorAll('[data-lic-tab]').forEach(el=>{
+    el.onclick = ()=>{ licTab = el.getAttribute('data-lic-tab'); render(); };
+  });
+  const filDesde = document.getElementById('filDesde');
+  if(filDesde) filDesde.onchange = ()=>{ licFiltro.desde = filDesde.value; render(); };
+  const filHasta = document.getElementById('filHasta');
+  if(filHasta) filHasta.onchange = ()=>{ licFiltro.hasta = filHasta.value; render(); };
+  const filTurno = document.getElementById('filTurno');
+  if(filTurno) filTurno.onchange = ()=>{ licFiltro.turno = filTurno.value; render(); };
+  const filPersonal = document.getElementById('filPersonal');
+  if(filPersonal) filPersonal.onchange = ()=>{ licFiltro.personalId = filPersonal.value; render(); };
+
+  document.querySelectorAll('[data-lic-detalle]').forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.getAttribute('data-lic-detalle');
+      const r = STATE.registros.find(x=>x.id===id);
+      showRegistroDetalle(r, 'licDetalleBox');
+    };
+  });
+
+  const btnCsvDet = document.getElementById('btnExportCsvDetalle');
+  if(btnCsvDet) btnCsvDet.onclick = exportCsvDetalle;
+  const btnCsvRes = document.getElementById('btnExportCsvResumen');
+  if(btnCsvRes) btnCsvRes.onclick = exportCsvResumen;
+
+  // Personal
+  document.querySelectorAll('[data-edit-codigo]').forEach(el=>{
+    el.onchange = ()=>{
+      const p = STATE.personal.find(x=>x.id===el.getAttribute('data-edit-codigo'));
+      p.codigo = el.value.trim(); saveState(); toast('Código actualizado');
+    };
+  });
+  document.querySelectorAll('[data-toggle-activo]').forEach(el=>{
+    el.onchange = ()=>{
+      const p = STATE.personal.find(x=>x.id===el.getAttribute('data-toggle-activo'));
+      p.activo = el.checked; saveState();
+    };
+  });
+  document.querySelectorAll('[data-del-personal]').forEach(el=>{
+    el.onclick = ()=>{
+      if(!confirm('¿Eliminar este personal? Sus registros históricos se conservarán.')) return;
+      STATE.personal = STATE.personal.filter(p=>p.id!==el.getAttribute('data-del-personal'));
+      saveState(); render();
+    };
+  });
+  const btnAddPersonal = document.getElementById('btnAddPersonal');
+  if(btnAddPersonal){
+    btnAddPersonal.onclick = ()=>{
+      const nombres = document.getElementById('npNombres').value.trim();
+      const apellidos = document.getElementById('npApellidos').value.trim();
+      const cargo = document.getElementById('npCargo').value.trim();
+      const codigo = document.getElementById('npCodigo').value.trim();
+      if(!nombres || !apellidos || !codigo){ toast('Completa nombres, apellidos y código'); return; }
+      STATE.personal.push({id: uid('p'), nombres, apellidos, cargo, codigo, activo:true});
+      saveState(); render(); toast('Personal agregado');
+    };
+  }
+
+  // Catalogo
+  document.querySelectorAll('[data-act][data-grado]').forEach(el=>{
+    el.onchange = ()=>{
+      const catId = el.getAttribute('data-cat');
+      const actId = el.getAttribute('data-act');
+      const grado = el.getAttribute('data-grado');
+      const cat = STATE.catalogo.find(c=>c.id===catId);
+      const act = cat.actividades.find(a=>a.id===actId);
+      const val = el.value==='' ? null : Number(el.value);
+      if(grado==='fijo'){ act.tiempoFijo = val; }
+      else { act.tiempos[grado] = val; }
+      saveState(); toast('Tiempo actualizado');
+    };
+  });
+  document.querySelectorAll('[data-del-act]').forEach(el=>{
+    el.onclick = ()=>{
+      if(!confirm('¿Eliminar esta actividad del catálogo?')) return;
+      const [catId, actId] = el.getAttribute('data-del-act').split('|');
+      const cat = STATE.catalogo.find(c=>c.id===catId);
+      cat.actividades = cat.actividades.filter(a=>a.id!==actId);
+      saveState(); render();
+    };
+  });
+  STATE.catalogo.forEach(cat=>{
+    const btn = document.getElementById('newActTipo_'+cat.id);
+    // no-op, dropdown itself needs no listener beyond default
+  });
+  document.querySelectorAll('[data-add-act]').forEach(el=>{
+    el.onclick = ()=>{
+      const catId = el.getAttribute('data-add-act');
+      const cat = STATE.catalogo.find(c=>c.id===catId);
+      const nombre = document.getElementById('newAct_'+catId).value.trim();
+      const tipo = document.getElementById('newActTipo_'+catId).value;
+      const min = Number(document.getElementById('newActMin_'+catId).value || 0);
+      if(!nombre){ toast('Escribe el nombre de la actividad'); return; }
+      const newId = 'custom_' + uid('');
+      if(tipo==='grado'){
+        cat.actividades.push({id:newId, nombre, origen:'personalizado', gradoDependiente:true, tiempos:{grado1:min,grado2:min,grado3:min}});
+      } else {
+        cat.actividades.push({id:newId, nombre, origen:'personalizado', gradoDependiente:false, tiempoFijo:min});
+      }
+      saveState(); render(); toast('Actividad agregada al catálogo');
+    };
+  });
+
+  // Config
+  const btnSaveConfig = document.getElementById('btnSaveConfig');
+  if(btnSaveConfig){
+    btnSaveConfig.onclick = ()=>{
+      STATE.config.horasTurnoGD = Number(document.getElementById('cfgGD').value)||12;
+      STATE.config.horasTurnoGN = Number(document.getElementById('cfgGN').value)||12;
+      STATE.config.margenAlerta = Math.min(100,Math.max(1,Number(document.getElementById('cfgMargen').value)||90))/100;
+      STATE.config.pinLicenciada = document.getElementById('cfgPin').value.trim() || STATE.config.pinLicenciada;
+      saveState(); toast('Configuración guardada');
+    };
+  }
+  const btnExportBackup = document.getElementById('btnExportBackup');
+  if(btnExportBackup){
+    btnExportBackup.onclick = ()=>{
+      downloadFile('respaldo_productividad_'+todayISO()+'.json', JSON.stringify(STATE, null, 2), 'application/json');
+    };
+  }
+  const btnImportBackup = document.getElementById('btnImportBackup');
+  const fileImport = document.getElementById('fileImport');
+  if(btnImportBackup && fileImport){
+    btnImportBackup.onclick = ()=> fileImport.click();
+    fileImport.onchange = (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try{
+          const incoming = JSON.parse(ev.target.result);
+          mergeState(incoming);
+          saveState(); render();
+          toast('Datos consolidados correctamente');
+        }catch(err){
+          alert('El archivo no es un respaldo válido.');
+        }
+      };
+      reader.readAsText(file);
+      fileImport.value = '';
+    };
+  }
+  const btnResetAll = document.getElementById('btnResetAll');
+  if(btnResetAll){
+    btnResetAll.onclick = ()=>{
+      if(!confirm('Esto borrará TODOS los registros, personal y catálogo de este navegador. ¿Continuar?')) return;
+      if(!confirm('Confirma nuevamente: esta acción no se puede deshacer.')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      STATE = defaultState();
+      saveState();
+      SESSION = null;
+      goto('login');
+    };
+  }
+}
+
+function mergeState(incoming){
+  // Merge registros by id (avoid duplicates), merge personal by id, keep local catalogo/config unless missing.
+  if(Array.isArray(incoming.registros)){
+    const existingIds = new Set(STATE.registros.map(r=>r.id));
+    incoming.registros.forEach(r=>{ if(!existingIds.has(r.id)) STATE.registros.push(r); });
+  }
+  if(Array.isArray(incoming.personal)){
+    const existingIds = new Set(STATE.personal.map(p=>p.id));
+    incoming.personal.forEach(p=>{ if(!existingIds.has(p.id)) STATE.personal.push(p); });
+  }
+}
+
+/* ------------------------------ Exportar CSV ------------------------------ */
+function exportCsvDetalle(){
+  const regs = filteredRegistros();
+  let out = ['Fecha;Turno;Personal;Categoria;Actividad;Grado;Cantidad;MinutoPorUnidad;SubtotalMin'];
+  regs.forEach(r=>{
+    r.items.forEach(it=>{
+      out.push([r.fecha, r.turno, r.personalNombre, it.categoriaNombre, it.actividadNombre, it.grado||'', it.cantidad, it.tiempoUnit, it.subtotal].map(csvEscape).join(';'));
+    });
+  });
+  downloadFile('detalle_productividad_'+todayISO()+'.csv', out.join('\n'), 'text/csv;charset=utf-8');
+}
+function exportCsvResumen(){
+  const regs = filteredRegistros();
+  let out = ['Fecha;Turno;Personal;TotalMin;TotalHHMM;HorasEstandar;Porcentaje'];
+  regs.forEach(r=>{
+    const horasEstandar = r.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+    const pct = horasEstandar>0 ? Math.round(((r.totalMin/60)/horasEstandar)*100) : 0;
+    out.push([r.fecha, r.turno, r.personalNombre, r.totalMin, minToHM(r.totalMin), horasEstandar, pct+'%'].map(csvEscape).join(';'));
+  });
+  downloadFile('resumen_productividad_'+todayISO()+'.csv', out.join('\n'), 'text/csv;charset=utf-8');
+}
+
+/* -------------------------------- Init -------------------------------- */
+loadState();
+goto('login');
+
+</script>
+</body>
+</html>
