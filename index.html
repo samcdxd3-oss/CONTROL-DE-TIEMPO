@@ -225,7 +225,6 @@ function defaultState(){
     config: {
       horasTurnoGD: 12,
       horasTurnoGN: 12,
-      pinLicenciada: '2015',
       margenAlerta: 0.90
     }
   };
@@ -306,7 +305,6 @@ function render(){
   if(VIEW === 'login') main.innerHTML = viewLogin();
   else if(VIEW === 'registro') main.innerHTML = viewRegistro();
   else if(VIEW === 'historial') main.innerHTML = viewHistorial();
-  else if(VIEW === 'licLogin') main.innerHTML = viewLicLogin();
   else if(VIEW === 'licDash') main.innerHTML = viewLicenciada();
   bindViewEvents();
 }
@@ -320,40 +318,15 @@ function viewLogin(){
     <div class="card">
       <div class="login-logo">👩‍⚕️</div>
       <h2 class="center">Ingreso de personal</h2>
-      <p class="muted center small">Selecciona tu nombre e ingresa tu código para registrar tus actividades del turno.</p>
+      <p class="muted center small">Selecciona tu nombre para registrar tus actividades del turno.</p>
       <div class="field">
         <label>Nombre</label>
         <select id="loginPersonal">${opts || '<option value="">(sin personal registrado)</option>'}</select>
       </div>
-      <div class="field">
-        <label>Código personal</label>
-        <input id="loginCodigo" type="password" inputmode="numeric" placeholder="Ej. 1001" autocomplete="off">
-      </div>
       <button class="btn btn-block" id="btnLoginEnfermero">Ingresar</button>
-      <p id="loginError" class="small" style="color:var(--danger); display:none; margin-top:8px;">Código incorrecto.</p>
     </div>
     <div class="center">
       <button class="link-btn" id="btnGoLic">Soy la Licenciada / Supervisora →</button>
-    </div>
-  </div>`;
-}
-
-function viewLicLogin(){
-  return `
-  <div class="login-wrap">
-    <div class="card">
-      <div class="login-logo">🔐</div>
-      <h2 class="center">Panel de la Licenciada</h2>
-      <p class="muted center small">Ingresa el PIN de supervisión para ver los reportes de todo el personal.</p>
-      <div class="field">
-        <label>PIN</label>
-        <input id="licPin" type="password" inputmode="numeric" autocomplete="off">
-      </div>
-      <button class="btn btn-block" id="btnLoginLic">Ingresar</button>
-      <p id="licError" class="small" style="color:var(--danger); display:none; margin-top:8px;">PIN incorrecto.</p>
-    </div>
-    <div class="center">
-      <button class="link-btn" id="btnBackLogin">← Volver al ingreso de personal</button>
     </div>
   </div>`;
 }
@@ -646,33 +619,18 @@ function bindViewEvents(){
   if(btnLoginEnf){
     btnLoginEnf.onclick = ()=>{
       const pid = document.getElementById('loginPersonal').value;
-      const code = document.getElementById('loginCodigo').value.trim();
       const p = STATE.personal.find(x=>x.id===pid);
-      if(p && p.codigo === code){
+      if(p){
         SESSION = { tipo:'enfermero', personalId:p.id };
         draft = null;
         goto('registro');
       } else {
-        document.getElementById('loginError').style.display='block';
+        toast('Selecciona tu nombre de la lista');
       }
     };
   }
   const btnGoLic = document.getElementById('btnGoLic');
-  if(btnGoLic) btnGoLic.onclick = ()=> goto('licLogin');
-  const btnBackLogin = document.getElementById('btnBackLogin');
-  if(btnBackLogin) btnBackLogin.onclick = ()=> goto('login');
-  const btnLoginLic = document.getElementById('btnLoginLic');
-  if(btnLoginLic){
-    btnLoginLic.onclick = ()=>{
-      const pin = document.getElementById('licPin').value.trim();
-      if(pin === STATE.config.pinLicenciada){
-        SESSION = { tipo:'licenciada' };
-        goto('licDash');
-      } else {
-        document.getElementById('licError').style.display='block';
-      }
-    };
-  }
+  if(btnGoLic) btnGoLic.onclick = ()=>{ SESSION = { tipo:'licenciada' }; goto('licDash'); };
 
   // Registro
   const draftFecha = document.getElementById('draftFecha');
@@ -938,14 +896,13 @@ function licPersonal(){
       <td>${escapeHtml(p.nombres)}</td>
       <td>${escapeHtml(p.apellidos)}</td>
       <td>${escapeHtml(p.cargo||'')}</td>
-      <td class="inline-edit"><input data-edit-codigo="${p.id}" value="${escapeHtml(p.codigo)}"></td>
       <td><input type="checkbox" data-toggle-activo="${p.id}" ${p.activo?'checked':''}></td>
       <td><button class="btn btn-outline btn-sm" data-del-personal="${p.id}">Eliminar</button></td>
     </tr>`).join('');
   return `
   <div class="card">
     <h2>Personal registrado</h2>
-    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cargo</th><th>Código</th><th>Activo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cargo</th><th>Activo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   </div>
   <div class="card">
     <h2>Agregar personal</h2>
@@ -953,7 +910,6 @@ function licPersonal(){
       <div class="field"><label>Nombres</label><input id="npNombres"></div>
       <div class="field"><label>Apellidos</label><input id="npApellidos"></div>
       <div class="field"><label>Cargo</label><input id="npCargo" placeholder="Enfermera / Enfermero / Técnico"></div>
-      <div class="field"><label>Código</label><input id="npCodigo" placeholder="Ej. 1014"></div>
     </div>
     <button class="btn" id="btnAddPersonal">+ Agregar</button>
   </div>`;
@@ -1041,7 +997,6 @@ function licConfig(){
       <div class="field"><label>Horas turno Diurno (GD)</label><input id="cfgGD" type="number" min="1" value="${c.horasTurnoGD}"></div>
       <div class="field"><label>Horas turno Nocturno (GN)</label><input id="cfgGN" type="number" min="1" value="${c.horasTurnoGN}"></div>
       <div class="field"><label>Umbral de alerta (%)</label><input id="cfgMargen" type="number" min="1" max="100" value="${Math.round(c.margenAlerta*100)}"></div>
-      <div class="field"><label>PIN de la Licenciada</label><input id="cfgPin" value="${escapeHtml(c.pinLicenciada)}"></div>
     </div>
     <button class="btn" id="btnSaveConfig">Guardar configuración</button>
   </div>
@@ -1106,12 +1061,6 @@ function bindLicenciadaEvents(){
   if(btnCsvRes) btnCsvRes.onclick = exportCsvResumen;
 
   // Personal
-  document.querySelectorAll('[data-edit-codigo]').forEach(el=>{
-    el.onchange = ()=>{
-      const p = STATE.personal.find(x=>x.id===el.getAttribute('data-edit-codigo'));
-      p.codigo = el.value.trim(); saveState(); toast('Código actualizado');
-    };
-  });
   document.querySelectorAll('[data-toggle-activo]').forEach(el=>{
     el.onchange = ()=>{
       const p = STATE.personal.find(x=>x.id===el.getAttribute('data-toggle-activo'));
@@ -1131,9 +1080,8 @@ function bindLicenciadaEvents(){
       const nombres = document.getElementById('npNombres').value.trim();
       const apellidos = document.getElementById('npApellidos').value.trim();
       const cargo = document.getElementById('npCargo').value.trim();
-      const codigo = document.getElementById('npCodigo').value.trim();
-      if(!nombres || !apellidos || !codigo){ toast('Completa nombres, apellidos y código'); return; }
-      STATE.personal.push({id: uid('p'), nombres, apellidos, cargo, codigo, activo:true});
+      if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
+      STATE.personal.push({id: uid('p'), nombres, apellidos, cargo, activo:true});
       saveState(); render(); toast('Personal agregado');
     };
   }
@@ -1225,7 +1173,6 @@ function bindLicenciadaEvents(){
       STATE.config.horasTurnoGD = Number(document.getElementById('cfgGD').value)||12;
       STATE.config.horasTurnoGN = Number(document.getElementById('cfgGN').value)||12;
       STATE.config.margenAlerta = Math.min(100,Math.max(1,Number(document.getElementById('cfgMargen').value)||90))/100;
-      STATE.config.pinLicenciada = document.getElementById('cfgPin').value.trim() || STATE.config.pinLicenciada;
       saveState(); toast('Configuración guardada');
     };
   }
