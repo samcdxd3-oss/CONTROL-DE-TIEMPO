@@ -162,10 +162,11 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
    App 100% cliente (sin backend). Datos en localStorage del navegador.
    ====================================================================== */
 
-const CATALOGO_SEED = [{"id": "2-control-de-s-v", "nombre": "Control de Signos Vitales", "actividades": [{"id": "2-control-de-s-v-p-a", "nombre": "P/A", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-p-fc", "nombre": "P - FC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-fr", "nombre": "FR", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-t", "nombre": "T°", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-sp02", "nombre": "SP02", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-control-del-dolor", "nombre": "Control del dolor", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "2-control-de-s-v-valoracion-glasgow", "nombre": "Valoracion glasgow", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "2-control-de-s-v-higiene-integral-del-paciente", "nombre": "Higiene Integral del Paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "2-control-de-s-v-limpieza-cavidad-oral", "nombre": "Limpieza Cavidad Oral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}]}, {"id": "3-aministracion-de-tto", "nombre": "Administración de Tratamiento", "actividades": [{"id": "3-aministracion-de-tto-oral", "nombre": "Oral", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sublingual", "nombre": "Sublingual", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 4, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-parenteral-id", "nombre": "Parenteral - Intradérmica (ID)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sc", "nombre": "Parenteral - Subcutánea (SC)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-im", "nombre": "Parenteral - Intramuscular (IM)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-ev", "nombre": "Parenteral - Endovenosa (EV)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-por-sng", "nombre": "Por SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-oticos-nasales-oftalmicos", "nombre": "Oticos, nasales, oftalmicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "3-aministracion-de-tto-topico", "nombre": "Tópico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 20}}, {"id": "3-aministracion-de-tto-rectal-vaginal", "nombre": "Rectal Vaginal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-inhalatoria", "nombre": "Inhalatoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-fluidos-endovenosos", "nombre": "Fluidos endovenosos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "3-aministracion-de-tto-fluidos-especiales", "nombre": "Fluidos especiales", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "3-aministracion-de-tto-infusion", "nombre": "Infusion", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}, {"id": "3-aministracion-de-tto-nutricion-parenteral", "nombre": "Nutricion parenteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "3-aministracion-de-tto-nutricion-enteral", "nombre": "Nutricion enteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "4-procedimientos", "nombre": "Procedimientos", "actividades": [{"id": "4-procedimientos-via-periferica", "nombre": "Vía Periferica", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-toma-de-muestra-aga-elec", "nombre": "Toma de muestra: AGA/ELEC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-control-pvc", "nombre": "Control PVC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-transfusion-sanguinea", "nombre": "Transfusión sanguinea", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plasma", "nombre": "Transfusión de  Plasma", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plaquetas", "nombre": "Transfusión de  Plaquetas", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-toma-de-ecg", "nombre": "Toma de ECG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 20, "grado3": 25}}, {"id": "4-procedimientos-oxigenoterapia", "nombre": "Oxigenoterapia", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-aspiracion-de-secreciones", "nombre": "Aspiración de secreciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-ventiloterapia-vent-mecanico", "nombre": "Ventiloterapia: vent. Mecanico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "4-procedimientos-bh", "nombre": "BH", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-nebulizaciones", "nombre": "Nebulizaciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-fisioterapia-respiratoria", "nombre": "Fisioterapia Respiratoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-drenaje-postural", "nombre": "Drenaje postural", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-de-sonda-naso-yeyuno", "nombre": "Lavado de Sonda naso yeyuno", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 6, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-gastrico", "nombre": "Lavado gástrico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-lavado-vesical", "nombre": "Lavado vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-manejo-de-via-aerea-tet", "nombre": "Manejo de vía aérea: TET", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tqt", "nombre": "Manejo de vía aérea - TQT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tubo-ot", "nombre": "Manejo de vía aérea - Tubo OT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-cateterismo-vesical", "nombre": "Cateterismo - Vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-sng", "nombre": "Cateterismo - SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-rectal", "nombre": "Cateterismo - Rectal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-curacion-de-via-perif", "nombre": "Curacion de Vía Perif.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-curacion-via-central", "nombre": "Curacion Vía central", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-hemoglucotex", "nombre": "Hemoglucotex", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-asistencia-en-instalac-avc", "nombre": "Asistencia en instalac.AVC", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-prueba-cruzada", "nombre": "Prueba cruzada", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-toma-muestra-sangre", "nombre": "Toma muestra Sangre", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-desarmado-de-vm", "nombre": "Desarmado de VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-desind-y-empaque-vm", "nombre": "Desind. y empaque VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-armado-y-operat-vm", "nombre": "Armado y operat. VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-muestra-aspirado-traqueal", "nombre": "Muestra Aspirado traqueal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-via-periferica", "nombre": "Retiro de via periferica", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 4}, {"id": "4-procedimientos-cuidado-de-via-aerea-tet", "nombre": "Cuidado de vía aérea: TET", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-sonda-foley", "nombre": "Retiro de sonda foley", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "5-monitoreo-hemodinamico", "nombre": "Monitoreo Hemodinámico", "actividades": [{"id": "5-monitoreo-hemodinamico-cardiaco", "nombre": "Cardiaco", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "5-monitoreo-hemodinamico-respiratorio", "nombre": "Respiratorio", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "5-monitoreo-hemodinamico-neurologico", "nombre": "Neurológico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}]}, {"id": "6-atenc-enf-en-emergencia", "nombre": "Atención de Enfermería en Emergencia", "actividades": [{"id": "6-atenc-enf-en-emergencia-r-c-p", "nombre": "R.C.P.", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 30}}, {"id": "6-atenc-enf-en-emergencia-hemoptisis", "nombre": "Hemoptisis", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 10}}, {"id": "6-atenc-enf-en-emergencia-convulsiones", "nombre": "Convulsiones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 20, "grado3": 20}}, {"id": "6-atenc-enf-en-emergencia-shock-h-c-n-a", "nombre": "Shock  (H, C, N, A)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 40}}]}, {"id": "7-otras-activ-asistenciales", "nombre": "Otras Actividades Asistenciales", "actividades": [{"id": "7-otras-activ-asistenciales-hospitalizacion-servicios-sop", "nombre": "Hospitalizacion.: Servicios,SOP", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-particip-exam-auxiliares-rx", "nombre": "Particip. Exam. auxiliares:Rx…", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-traslado-asist-intrahospitalario", "nombre": "Traslado asist. intrahospitalario", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 20}}, {"id": "7-otras-activ-asistenciales-reporter-de-enfermeria", "nombre": "Reporter de Enfermería", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-registro-proceso-soapie", "nombre": "Registro:PROCESO/SOAPIE", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-supervision-tec-estud-inter", "nombre": "Supervisión Téc./Estud./Inter...", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-particip-en-procedim-medicos", "nombre": "Particip. en procedim. Médicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-traslado-asist-extrahospitalario", "nombre": "Traslado asist. Extrahospitalario", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}]}, {"id": "8-funcion-administrativa", "nombre": "Función Administrativa", "actividades": [{"id": "8-funcion-administrativa-paso-visita-con-medico", "nombre": "Paso visita con medico", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-ingreso-paciente", "nombre": "Tramite ingreso paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-tramite-alta-paciente", "nombre": "Tramite alta paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-registro-y-pegado-de-resultados", "nombre": "Registro y pegado de resultados", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 1}, {"id": "8-funcion-administrativa-actualizacion-de-pizarras", "nombre": "Actualizacion de pizarras", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 2}, {"id": "8-funcion-administrativa-preparacion-de-hcl", "nombre": "Preparacion de HCl.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-coord-transf-referecia", "nombre": "Coord. Transf/ referecia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-educacion-al-paciente", "nombre": "Educacion al paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-educacion-a-la-familia", "nombre": "Educacion a la familia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-valoracion-riesgo-caidas", "nombre": "Valoracion Riesgo Caidas", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-caida-de-paciente", "nombre": "Caida de paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-valoracion-riesgo-upp", "nombre": "Valoracion riesgo UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-upp", "nombre": "Paciente con UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-flebitis", "nombre": "Paciente con flebitis", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-monitoreo-de-actividades-asist", "nombre": "Monitoreo de actividades asist.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-supervision-al-personal", "nombre": "Supervision  al  personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-distribucion-del-personal", "nombre": "Distribucion del personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-orientacion-estudiantes-pers-nuevo", "nombre": "Orientacion estudiantes /pers. Nuevo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-elab-de-roles-de-trabajo", "nombre": "Elab. De roles de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-reunion-de-trabajo", "nombre": "Reunión de Trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reunion-de-capacitacion", "nombre": "Reunión de Capacitación", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reuniones-de-equipo", "nombre": "Reuniones de Equipo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reporte-de-accidentes-de-trabajo", "nombre": "Reporte de accidentes de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-doc-intrainstitucional-estudiantil", "nombre": "Doc. Intrainstitucional estudiantil", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-docencia-extrainstitucional", "nombre": "Docencia extrainstitucional", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-otras-act-de-ensenanza-aprendiz", "nombre": "Otras act. De enseñanza/aprendiz", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-administrativo-de-documentos", "nombre": "Trámite administrativo de documentos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}]}];
+const CATALOGO_SEED = [{"id": "2-control-de-s-v", "nombre": "Control de Signos Vitales", "actividades": [{"id": "2-control-de-s-v-p-a", "nombre": "P/A", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-p-fc", "nombre": "P - FC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-fr", "nombre": "FR", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-t", "nombre": "T°", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-sp02", "nombre": "SP02", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-control-del-dolor", "nombre": "Control del dolor", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-valoracion-glasgow", "nombre": "Valoracion glasgow", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-higiene-integral-del-paciente", "nombre": "Higiene Integral del Paciente", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "2-control-de-s-v-limpieza-cavidad-oral", "nombre": "Limpieza Cavidad Oral", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 7, "grado2": 7, "grado3": 7}}]}, {"id": "3-aministracion-de-tto", "nombre": "Administración de Tratamiento", "actividades": [{"id": "3-aministracion-de-tto-oral", "nombre": "Oral", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sublingual", "nombre": "Sublingual", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 4, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-parenteral-id", "nombre": "Parenteral - Intradérmica (ID)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sc", "nombre": "Parenteral - Subcutánea (SC)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-im", "nombre": "Parenteral - Intramuscular (IM)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-ev", "nombre": "Parenteral - Endovenosa (EV)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-por-sng", "nombre": "Por SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-oticos-nasales-oftalmicos", "nombre": "Oticos, nasales, oftalmicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "3-aministracion-de-tto-topico", "nombre": "Tópico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 20}}, {"id": "3-aministracion-de-tto-rectal-vaginal", "nombre": "Rectal Vaginal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-inhalatoria", "nombre": "Inhalatoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-fluidos-endovenosos", "nombre": "Fluidos endovenosos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "3-aministracion-de-tto-fluidos-especiales", "nombre": "Fluidos especiales", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "3-aministracion-de-tto-infusion", "nombre": "Infusion", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}, {"id": "3-aministracion-de-tto-nutricion-parenteral", "nombre": "Nutricion parenteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "3-aministracion-de-tto-nutricion-enteral", "nombre": "Nutricion enteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "4-procedimientos", "nombre": "Procedimientos", "actividades": [{"id": "4-procedimientos-via-periferica", "nombre": "Vía Periferica", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-toma-de-muestra-aga-elec", "nombre": "Toma de muestra: AGA/ELEC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-control-pvc", "nombre": "Control PVC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-transfusion-sanguinea", "nombre": "Transfusión sanguinea", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plasma", "nombre": "Transfusión de  Plasma", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plaquetas", "nombre": "Transfusión de  Plaquetas", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-toma-de-ecg", "nombre": "Toma de ECG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 20, "grado3": 25}}, {"id": "4-procedimientos-oxigenoterapia", "nombre": "Oxigenoterapia", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-aspiracion-de-secreciones", "nombre": "Aspiración de secreciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-ventiloterapia-vent-mecanico", "nombre": "Ventiloterapia: vent. Mecanico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "4-procedimientos-bh", "nombre": "BH", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-nebulizaciones", "nombre": "Nebulizaciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-fisioterapia-respiratoria", "nombre": "Fisioterapia Respiratoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-drenaje-postural", "nombre": "Drenaje postural", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-de-sonda-naso-yeyuno", "nombre": "Lavado de Sonda naso yeyuno", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 6, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-gastrico", "nombre": "Lavado gástrico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-lavado-vesical", "nombre": "Lavado vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-manejo-de-via-aerea-tet", "nombre": "Manejo de vía aérea: TET", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tqt", "nombre": "Manejo de vía aérea - TQT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tubo-ot", "nombre": "Manejo de vía aérea - Tubo OT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-cateterismo-vesical", "nombre": "Cateterismo - Vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-sng", "nombre": "Cateterismo - SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-rectal", "nombre": "Cateterismo - Rectal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-curacion-de-via-perif", "nombre": "Curacion de Vía Perif.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-curacion-via-central", "nombre": "Curacion Vía central", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-hemoglucotex", "nombre": "Hemoglucotex", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-asistencia-en-instalac-avc", "nombre": "Asistencia en instalac.AVC", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-prueba-cruzada", "nombre": "Prueba cruzada", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-toma-muestra-sangre", "nombre": "Toma muestra Sangre", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-desarmado-de-vm", "nombre": "Desarmado de VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-desind-y-empaque-vm", "nombre": "Desind. y empaque VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-armado-y-operat-vm", "nombre": "Armado y operat. VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-muestra-aspirado-traqueal", "nombre": "Muestra Aspirado traqueal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-via-periferica", "nombre": "Retiro de via periferica", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 4}, {"id": "4-procedimientos-cuidado-de-via-aerea-tet", "nombre": "Cuidado de vía aérea: TET", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-sonda-foley", "nombre": "Retiro de sonda foley", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "5-monitoreo-hemodinamico", "nombre": "Monitoreo Hemodinámico", "actividades": [{"id": "5-monitoreo-hemodinamico-cardiaco", "nombre": "Cardiaco", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "5-monitoreo-hemodinamico-respiratorio", "nombre": "Respiratorio", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "5-monitoreo-hemodinamico-neurologico", "nombre": "Neurológico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}]}, {"id": "6-atenc-enf-en-emergencia", "nombre": "Atención de Enfermería en Emergencia", "actividades": [{"id": "6-atenc-enf-en-emergencia-r-c-p", "nombre": "R.C.P.", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 30}}, {"id": "6-atenc-enf-en-emergencia-hemoptisis", "nombre": "Hemoptisis", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 10}}, {"id": "6-atenc-enf-en-emergencia-convulsiones", "nombre": "Convulsiones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 20, "grado3": 20}}, {"id": "6-atenc-enf-en-emergencia-shock-h-c-n-a", "nombre": "Shock  (H, C, N, A)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 40}}]}, {"id": "7-otras-activ-asistenciales", "nombre": "Otras Actividades Asistenciales", "actividades": [{"id": "7-otras-activ-asistenciales-hospitalizacion-servicios-sop", "nombre": "Hospitalizacion.: Servicios,SOP", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-particip-exam-auxiliares-rx", "nombre": "Particip. Exam. auxiliares:Rx…", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-traslado-asist-intrahospitalario", "nombre": "Traslado asist. intrahospitalario", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 20}}, {"id": "7-otras-activ-asistenciales-reporter-de-enfermeria", "nombre": "Reporter de Enfermería", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-registro-proceso-soapie", "nombre": "Registro:PROCESO/SOAPIE", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-supervision-tec-estud-inter", "nombre": "Supervisión Téc./Estud./Inter...", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-particip-en-procedim-medicos", "nombre": "Particip. en procedim. Médicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-traslado-asist-extrahospitalario", "nombre": "Traslado asist. Extrahospitalario", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}]}, {"id": "8-funcion-administrativa", "nombre": "Función Administrativa", "actividades": [{"id": "8-funcion-administrativa-paso-visita-con-medico", "nombre": "Paso visita con medico", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-ingreso-paciente", "nombre": "Tramite ingreso paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-tramite-alta-paciente", "nombre": "Tramite alta paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-registro-y-pegado-de-resultados", "nombre": "Registro y pegado de resultados", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 1}, {"id": "8-funcion-administrativa-actualizacion-de-pizarras", "nombre": "Actualizacion de pizarras", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 2}, {"id": "8-funcion-administrativa-preparacion-de-hcl", "nombre": "Preparacion de HCl.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-coord-transf-referecia", "nombre": "Coord. Transf/ referecia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-educacion-al-paciente", "nombre": "Educacion al paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-educacion-a-la-familia", "nombre": "Educacion a la familia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-valoracion-riesgo-caidas", "nombre": "Valoracion Riesgo Caidas", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-caida-de-paciente", "nombre": "Caida de paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-valoracion-riesgo-upp", "nombre": "Valoracion riesgo UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-upp", "nombre": "Paciente con UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-flebitis", "nombre": "Paciente con flebitis", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-monitoreo-de-actividades-asist", "nombre": "Monitoreo de actividades asist.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-supervision-al-personal", "nombre": "Supervision  al  personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-distribucion-del-personal", "nombre": "Distribucion del personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-orientacion-estudiantes-pers-nuevo", "nombre": "Orientacion estudiantes /pers. Nuevo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-elab-de-roles-de-trabajo", "nombre": "Elab. De roles de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-reunion-de-trabajo", "nombre": "Reunión de Trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reunion-de-capacitacion", "nombre": "Reunión de Capacitación", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reuniones-de-equipo", "nombre": "Reuniones de Equipo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reporte-de-accidentes-de-trabajo", "nombre": "Reporte de accidentes de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-doc-intrainstitucional-estudiantil", "nombre": "Doc. Intrainstitucional estudiantil", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-docencia-extrainstitucional", "nombre": "Docencia extrainstitucional", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-otras-act-de-ensenanza-aprendiz", "nombre": "Otras act. De enseñanza/aprendiz", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-administrativo-de-documentos", "nombre": "Trámite administrativo de documentos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}]}];
 const PERSONAL_SEED = [{"nombres": "Dina", "apellidos": "Aguilar", "cargo": "Enfermera", "id": "p1", "codigo": "1001", "activo": true}, {"nombres": "Yolanda", "apellidos": "Chacolla", "cargo": "Administradora", "id": "p2", "codigo": "1002", "activo": true}, {"nombres": "Juana", "apellidos": "Fernández", "cargo": "Enfermera", "id": "p3", "codigo": "1003", "activo": true}, {"nombres": "Roberto", "apellidos": "Guevara Arredondo", "cargo": "Enfermero", "id": "p4", "codigo": "1004", "activo": true}, {"nombres": "Enoc", "apellidos": "López", "cargo": "Enfermero", "id": "p5", "codigo": "1005", "activo": true}, {"nombres": "Julia", "apellidos": "Roque", "cargo": "Enfermera", "id": "p6", "codigo": "1006", "activo": true}, {"nombres": "Mariela", "apellidos": "Sánchez", "cargo": "Enfermera", "id": "p7", "codigo": "1007", "activo": true}, {"nombres": "Miguel Augusto", "apellidos": "Solórzano Durán", "cargo": "Enfermero", "id": "p8", "codigo": "1008", "activo": true}, {"nombres": "Dóris Candelaria", "apellidos": "Ticona Salcedo", "cargo": "Enfermera", "id": "p9", "codigo": "1009", "activo": true}, {"nombres": "Marina", "apellidos": "Vera", "cargo": "Enfermera", "id": "p10", "codigo": "1010", "activo": true}, {"nombres": "Ana", "apellidos": "Vizcarra", "cargo": "Enfermera", "id": "p11", "codigo": "1011", "activo": true}, {"nombres": "Moisés", "apellidos": "Yabar", "cargo": "Enfermero", "id": "p12", "codigo": "1012", "activo": true}, {"nombres": "Glenda", "apellidos": "Morris Flores", "cargo": "Enfermera", "id": "p13", "codigo": "1013", "activo": true}];
+const PACIENTES_SEED = [{"nombres": "Lorenzo", "apellidos": "Mestas Pacheco", "cama": "414", "grado": 2, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac1"}, {"nombres": "Juan", "apellidos": "Calizaya", "cama": "413", "grado": 1, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac2"}, {"nombres": "Robert", "apellidos": "Martinez Mamani", "cama": "415", "grado": 3, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac3"}];
 const STORAGE_KEY = 'uci_productividad_v1';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /* ---------------------------- Utilidades ---------------------------- */
 function uid(prefix){ return (prefix||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
@@ -177,9 +178,10 @@ function fmtFechaLarga(iso){
   return d + ' ' + meses[m-1] + ' ' + y;
 }
 function minToHHMM(min){
-  min = Math.round(min||0);
+  const sign = min < 0 ? '-' : '';
+  min = Math.round(Math.abs(min||0));
   const h = Math.floor(min/60), m = min%60;
-  return h + 'h ' + String(m).padStart(2,'0') + 'm';
+  return sign + h + 'h ' + String(m).padStart(2,'0') + 'm';
 }
 function minToHM(min){
   min = Math.round(min||0);
@@ -217,6 +219,7 @@ function defaultState(){
   return {
     version: SCHEMA_VERSION,
     personal: JSON.parse(JSON.stringify(PERSONAL_SEED)),
+    pacientes: JSON.parse(JSON.stringify(PACIENTES_SEED)),
     catalogo: JSON.parse(JSON.stringify(CATALOGO_SEED)),
     registros: [],
     config: {
@@ -237,6 +240,7 @@ function loadState(){
     if(!STATE.personal) STATE.personal = JSON.parse(JSON.stringify(PERSONAL_SEED));
     if(!STATE.catalogo) STATE.catalogo = JSON.parse(JSON.stringify(CATALOGO_SEED));
     if(!STATE.registros) STATE.registros = [];
+    if(!STATE.pacientes) STATE.pacientes = JSON.parse(JSON.stringify(PACIENTES_SEED));
   }catch(e){
     console.error('Error cargando datos, se reinicia almacenamiento local', e);
     STATE = defaultState();
@@ -245,6 +249,13 @@ function loadState(){
 }
 function saveState(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+}
+
+function pacientesActivos(){
+  return STATE.pacientes.filter(p=>p.activo);
+}
+function pacienteLabel(p){
+  return p.nombres+' '+p.apellidos + (p.cama ? ' — Cama '+p.cama : '') + ' — Grado '+p.grado;
 }
 
 /* --------------------------- Sesión actual --------------------------- */
@@ -309,10 +320,14 @@ function viewLogin(){
     <div class="card">
       <div class="login-logo">👩‍⚕️</div>
       <h2 class="center">Ingreso de personal</h2>
-      <p class="muted center small">Selecciona tu nombre para registrar tus actividades del turno.</p>
+      <p class="muted center small">Selecciona tu nombre e ingresa tu código para registrar tus actividades del turno.</p>
       <div class="field">
         <label>Nombre</label>
         <select id="loginPersonal">${opts || '<option value="">(sin personal registrado)</option>'}</select>
+      </div>
+      <div class="field">
+        <label>Código personal</label>
+        <input id="loginCodigo" type="password" inputmode="numeric" placeholder="Ej. 1001" autocomplete="off">
       </div>
       <button class="btn btn-block" id="btnLoginEnfermero">Ingresar</button>
       <p id="loginError" class="small" style="color:var(--danger); display:none; margin-top:8px;">Código incorrecto.</p>
@@ -370,7 +385,7 @@ function viewRegistro(){
     <div class="item-line">
       <div class="item-main">
         <div class="item-name">${escapeHtml(it.actividadNombre)} ${it.grado ? `<span class="badge-origen">Grado ${it.grado.replace('grado','')}</span>` : ''}</div>
-        <div class="item-meta">${escapeHtml(it.categoriaNombre)} · ${it.cantidad} × ${it.tiempoUnit} min</div>
+        <div class="item-meta">${escapeHtml(it.categoriaNombre)} · ${it.cantidad} × ${it.tiempoUnit} min ${it.pacienteNombre ? '· 🧑‍🦱 '+escapeHtml(it.pacienteNombre) : '· <span class="dim">sin paciente / general</span>'}</div>
       </div>
       <div class="item-sub">${it.subtotal} min</div>
       <button class="btn btn-outline btn-sm" data-remove-item="${it.id}">✕</button>
@@ -448,10 +463,11 @@ function viewHistorial(){
 }
 
 /* --------------------------- Modal: agregar actividad --------------------------- */
-let modalState = { open:false, categoriaId:null, query:'', actividad:null, grado:null, cantidad:1 };
+// modalState.step: 'actividad' | 'paciente' | 'cantidad'
+let modalState = { open:false, step:'actividad', categoriaId:null, query:'', actividad:null, pacienteId:undefined, cantidad:1 };
 
 function openAddModal(){
-  modalState = { open:true, categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:null, cantidad:1 };
+  modalState = { open:true, step:'actividad', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, pacienteId:undefined, cantidad:1 };
   renderModal();
 }
 function closeModal(){
@@ -459,17 +475,11 @@ function closeModal(){
   document.getElementById('modalRoot').innerHTML = '';
 }
 
-function activityTime(act, grado){
-  if(act.gradoDependiente) return act.tiempos[grado] != null ? act.tiempos[grado] : null;
-  return act.tiempoFijo;
-}
-
 function renderModal(){
   const root = document.getElementById('modalRoot');
   if(!modalState.open){ root.innerHTML=''; return; }
 
-  if(!modalState.actividad){
-    // Step 1: choose category + activity
+  if(modalState.step === 'actividad'){
     const cats = STATE.catalogo;
     const chipbar = cats.map(c=>`<button class="chip-cat ${c.id===modalState.categoriaId?'active':''}" data-cat="${c.id}">${escapeHtml(c.nombre)}</button>`).join('');
     let acts = [];
@@ -497,27 +507,52 @@ function renderModal(){
         <div class="act-list">${list}</div>
       </div>
     </div>`;
-  } else {
-    // Step 2: grado (if applicable) + cantidad
+  } else if(modalState.step === 'paciente'){
     const a = modalState.actividad;
-    const needsGrado = a.gradoDependiente;
-    let gradoBtns = '';
-    if(needsGrado){
-      gradoBtns = `<div class="grado-btns">` + ['grado1','grado2','grado3'].map(g=>{
-        const t = a.tiempos[g];
-        if(t==null) return '';
-        return `<button class="${modalState.grado===g?'sel':''}" data-grado="${g}">Grado ${g.slice(-1)}<small>${t} min</small></button>`;
-      }).join('') + `</div>`;
+    const activos = pacientesActivos();
+    const obligatorio = a.gradoDependiente;
+    if(activos.length===0 && obligatorio){
+      root.innerHTML = `
+      <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+          <div class="modal-head"><h3>Falta registrar pacientes</h3><button class="close-x" id="modalClose">×</button></div>
+          <p class="muted">"${escapeHtml(a.nombre)}" depende del grado del paciente, pero todavía no hay pacientes activos registrados.</p>
+          <p class="muted small">Pide a la Licenciada que los registre en el Panel Licenciada → Pacientes.</p>
+          <button class="btn btn-outline btn-block" id="btnBackToList">← Elegir otra actividad</button>
+        </div>
+      </div>`;
+    } else {
+      const list = activos.map(p=>`
+        <div class="act-item clickable" data-pick-paciente="${p.id}">
+          <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)+' · '):''}Grado ${p.grado}</div></div>
+          <div class="muted">›</div>
+        </div>`).join('');
+      const sinPacienteOpt = obligatorio ? '' : `<div class="act-item clickable" data-pick-paciente="">
+          <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente</div></div>
+          <div class="muted">›</div>
+        </div>`;
+      root.innerHTML = `
+      <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+          <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
+          <p class="muted small">${obligatorio ? 'Selecciona el paciente (el tiempo depende de su grado):' : '¿Para qué paciente fue? (opcional)'}</p>
+          <div class="act-list">${sinPacienteOpt}${list}</div>
+          <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnBackToList">← Elegir otra actividad</button>
+        </div>
+      </div>`;
     }
-    const tiempoUnit = needsGrado ? (modalState.grado ? a.tiempos[modalState.grado] : null) : a.tiempoFijo;
+  } else if(modalState.step === 'cantidad'){
+    const a = modalState.actividad;
+    const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+    const tiempoUnit = a.gradoDependiente ? (paciente ? a.tiempos['grado'+paciente.grado] : null) : a.tiempoFijo;
     const subtotal = tiempoUnit!=null ? tiempoUnit*modalState.cantidad : null;
 
     root.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
-        <p class="muted small">${escapeHtml(a.categoriaNombre)}</p>
-        ${needsGrado ? `<label class="small" style="font-weight:700;">¿Grado del paciente?</label>${gradoBtns}` : `<p>Tiempo estándar: <b>${a.tiempoFijo} min</b></p>`}
+        <p class="muted small">${escapeHtml(a.categoriaNombre)}${paciente ? ' · 🧑‍🦱 '+escapeHtml(paciente.nombres+' '+paciente.apellidos)+' (Grado '+paciente.grado+')' : ' · Sin paciente / general'}</p>
+        <p>Tiempo estándar: <b>${tiempoUnit!=null?tiempoUnit+' min':'—'}</b></p>
         <div class="field" style="margin-top:12px;">
           <label>Cantidad de veces realizada</label>
           <div class="stepper">
@@ -530,8 +565,8 @@ function renderModal(){
           <div class="t-label">Subtotal</div>
           <div class="t-value">${subtotal!=null ? subtotal+' min' : '—'}</div>
         </div>
-        <button class="btn btn-block" style="margin-top:14px;" id="btnConfirmAdd" ${ (needsGrado && !modalState.grado) ? 'disabled' : ''}>Agregar al turno</button>
-        <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnBackToList">← Elegir otra actividad</button>
+        <button class="btn btn-block" style="margin-top:14px;" id="btnConfirmAdd">Agregar al turno</button>
+        <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnBackToPaciente">← Atrás</button>
       </div>
     </div>`;
   }
@@ -556,16 +591,24 @@ function renderModal(){
       const cat = STATE.catalogo.find(c=>c.id===catId);
       const act = cat.actividades.find(x=>x.id===actId);
       modalState.actividad = {...act, categoriaId:cat.id, categoriaNombre:cat.nombre};
-      modalState.grado = null; modalState.cantidad = 1;
+      modalState.pacienteId = undefined; modalState.cantidad = 1;
+      modalState.step = 'paciente';
       renderModal();
     };
   });
-  const backBtn = document.getElementById('btnBackToList');
-  if(backBtn) backBtn.onclick = ()=>{ modalState.actividad=null; renderModal(); };
-
-  document.querySelectorAll('[data-grado]').forEach(el=>{
-    el.onclick = ()=>{ modalState.grado = el.getAttribute('data-grado'); renderModal(); };
+  document.querySelectorAll('[data-pick-paciente]').forEach(el=>{
+    el.onclick = ()=>{
+      const pid = el.getAttribute('data-pick-paciente');
+      modalState.pacienteId = pid || null;
+      modalState.step = 'cantidad';
+      renderModal();
+    };
   });
+  const backToList = document.getElementById('btnBackToList');
+  if(backToList) backToList.onclick = ()=>{ modalState.actividad=null; modalState.step='actividad'; renderModal(); };
+  const backToPaciente = document.getElementById('btnBackToPaciente');
+  if(backToPaciente) backToPaciente.onclick = ()=>{ modalState.step='paciente'; renderModal(); };
+
   const qtyInput = document.getElementById('qtyInput');
   if(qtyInput){
     qtyInput.onchange = ()=>{ modalState.cantidad = Math.max(1, parseInt(qtyInput.value)||1); renderModal(); };
@@ -576,12 +619,16 @@ function renderModal(){
   if(confirmBtn){
     confirmBtn.onclick = ()=>{
       const a = modalState.actividad;
-      const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
+      const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+      const tiempoUnit = a.gradoDependiente ? a.tiempos['grado'+paciente.grado] : a.tiempoFijo;
+      if(tiempoUnit==null){ toast('No se pudo calcular el tiempo para esta combinación'); return; }
       draft.items.push({
         id: uid('it'),
         categoriaId: a.categoriaId, categoriaNombre: a.categoriaNombre,
         actividadId: a.id, actividadNombre: a.nombre,
-        grado: a.gradoDependiente ? modalState.grado : null,
+        grado: a.gradoDependiente ? ('grado'+paciente.grado) : null,
+        pacienteId: paciente ? paciente.id : null,
+        pacienteNombre: paciente ? (paciente.nombres+' '+paciente.apellidos) : null,
         cantidad: modalState.cantidad, tiempoUnit: tiempoUnit,
         subtotal: tiempoUnit*modalState.cantidad
       });
@@ -596,13 +643,12 @@ function renderModal(){
 function bindViewEvents(){
   // Login enfermero
   const btnLoginEnf = document.getElementById('btnLoginEnfermero');
-  // TEMP-TEST: código de personal desactivado para pruebas. Para reactivarlo,
-  // vuelve a poner la validación "if(p && p.codigo === code){ ... } else { ... }"
   if(btnLoginEnf){
     btnLoginEnf.onclick = ()=>{
       const pid = document.getElementById('loginPersonal').value;
+      const code = document.getElementById('loginCodigo').value.trim();
       const p = STATE.personal.find(x=>x.id===pid);
-      if(p){
+      if(p && p.codigo === code){
         SESSION = { tipo:'enfermero', personalId:p.id };
         draft = null;
         goto('registro');
@@ -612,9 +658,7 @@ function bindViewEvents(){
     };
   }
   const btnGoLic = document.getElementById('btnGoLic');
-  // TEMP-TEST: PIN de licenciada desactivado para pruebas. Para reactivarlo,
-  // vuelve a poner: btnGoLic.onclick = ()=> goto('licLogin');
-  if(btnGoLic) btnGoLic.onclick = ()=>{ SESSION = { tipo:'licenciada' }; goto('licDash'); };
+  if(btnGoLic) btnGoLic.onclick = ()=> goto('licLogin');
   const btnBackLogin = document.getElementById('btnBackLogin');
   if(btnBackLogin) btnBackLogin.onclick = ()=> goto('login');
   const btnLoginLic = document.getElementById('btnLoginLic');
@@ -671,35 +715,37 @@ function bindViewEvents(){
     el.onclick = ()=>{
       const id = el.getAttribute('data-view-registro');
       const r = STATE.registros.find(x=>x.id===id);
-      showRegistroDetalle(r, 'registroDetalle');
+      showRegistroDetalle(r.items, 'registroDetalle', r.personalNombre+' — '+fmtFechaLarga(r.fecha)+' ('+(r.turno==='GD'?'Diurno':'Nocturno')+')');
     };
   });
 
   bindLicenciadaEvents();
 }
 
-function showRegistroDetalle(r, targetId){
+function showRegistroDetalle(items, targetId, titulo){
   const el = document.getElementById(targetId);
-  if(!el || !r) return;
-  const rows = r.items.map(it=>`<tr>
+  if(!el || !items) return;
+  const total = items.reduce((s,i)=>s+i.subtotal,0);
+  const rows = items.map(it=>`<tr>
       <td>${escapeHtml(it.categoriaNombre)}</td>
       <td>${escapeHtml(it.actividadNombre)}${it.grado?' (G'+it.grado.slice(-1)+')':''}</td>
+      <td>${it.pacienteNombre ? escapeHtml(it.pacienteNombre) : '<span class="dim">—</span>'}</td>
       <td>${it.cantidad}</td>
       <td>${it.tiempoUnit}</td>
       <td>${it.subtotal}</td>
     </tr>`).join('');
   el.innerHTML = `
   <div class="card">
-    <h3>Detalle — ${fmtFechaLarga(r.fecha)} (${r.turno==='GD'?'Diurno':'Nocturno'})</h3>
-    <p class="muted small">${escapeHtml(r.personalNombre||'')}</p>
-    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Cant.</th><th>Min/u</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p style="margin-top:10px;"><b>Total: ${minToHHMM(r.totalMin)}</b></p>
+    <h3>Detalle${titulo ? ' — '+escapeHtml(titulo) : ''}</h3>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Paciente</th><th>Cant.</th><th>Min/u</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p style="margin-top:10px;"><b>Total: ${minToHHMM(total)}</b></p>
   </div>`;
 }
 
 /* ============================ LICENCIADA =============================== */
 let licTab = 'resumen';
 let licFiltro = { desde: null, hasta: null, turno: 'todos', personalId: 'todos' };
+let licDetalleAbierto = null; // key of open group/patient detail
 
 function firstDayOfMonthISO(){
   const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
@@ -719,12 +765,41 @@ function filteredRegistros(){
   }).sort((a,b)=> b.fecha.localeCompare(a.fecha));
 }
 
+/* Agrupa los registros en: por (personal+fecha+turno) -> total y desglose por paciente.
+   Esto evita que aparezcan varias filas "sueltas" solo porque se guardó el turno
+   más de una vez; en cambio, si aparecen varias filas para la misma persona es
+   porque corresponden a pacientes distintos dentro de ese turno. */
+function buildResumenGroups(){
+  const regs = filteredRegistros();
+  const groups = {};
+  regs.forEach(r=>{
+    const key = r.personalId+'|'+r.fecha+'|'+r.turno;
+    if(!groups[key]){
+      groups[key] = {
+        key, personalId:r.personalId, personalNombre:r.personalNombre, fecha:r.fecha, turno:r.turno,
+        totalMin:0, porPaciente:{}
+      };
+    }
+    const g = groups[key];
+    g.totalMin += r.totalMin;
+    r.items.forEach(it=>{
+      const pid = it.pacienteId || '__general__';
+      const pname = it.pacienteNombre || 'Actividades generales / administrativas';
+      if(!g.porPaciente[pid]) g.porPaciente[pid] = { pacienteId: it.pacienteId, pacienteNombre: pname, totalMin:0, items:[] };
+      g.porPaciente[pid].totalMin += it.subtotal;
+      g.porPaciente[pid].items.push(it);
+    });
+  });
+  return Object.values(groups).sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.totalMin - a.totalMin);
+}
+
 function viewLicenciada(){
   ensureLicFiltro();
   const tabs = [
     ['resumen','Resumen por turno'],
     ['actividad','Por actividad'],
     ['personal','Personal'],
+    ['pacientes','Pacientes'],
     ['catalogo','Catálogo'],
     ['config','Configuración']
   ];
@@ -734,6 +809,7 @@ function viewLicenciada(){
   if(licTab==='resumen') body = licResumen();
   else if(licTab==='actividad') body = licPorActividad();
   else if(licTab==='personal') body = licPersonal();
+  else if(licTab==='pacientes') body = licPacientes();
   else if(licTab==='catalogo') body = licCatalogo();
   else if(licTab==='config') body = licConfig();
 
@@ -765,44 +841,58 @@ function licFiltrosHtml(){
 }
 
 function licResumen(){
-  const regs = filteredRegistros();
+  const groups = buildResumenGroups();
   const margen = STATE.config.margenAlerta || 0.9;
-  let exceso=0, deficitFuerte=0, totalMin=0;
-  const rows = regs.map(r=>{
-    const horasEstandar = r.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
-    const pct = horasEstandar>0 ? (r.totalMin/60)/horasEstandar : 0;
-    totalMin += r.totalMin;
+  let excesoTurnos=0, excesoMinTotal=0, deficitFuerte=0, totalMinGD=0, totalMinGN=0;
+
+  const rowsHtml = groups.map(g=>{
+    const horasEstandar = g.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+    const estandarMin = horasEstandar*60;
+    const pct = estandarMin>0 ? g.totalMin/estandarMin : 0;
     let chip = 'chip-ok', estado='OK';
-    if(pct>=1){ chip='chip-danger'; estado='Excede turno'; exceso++; }
+    if(pct>=1){ chip='chip-danger'; estado='Excede turno'; excesoTurnos++; excesoMinTotal += (g.totalMin-estandarMin); }
     else if(pct>=margen){ chip='chip-warn'; estado='Cerca del límite'; }
     else if(pct<0.5){ chip='chip-muted'; estado='Muy por debajo'; deficitFuerte++; }
-    return {r, pct, html:`<tr class="clickable" data-lic-detalle="${r.id}">
-      <td>${escapeHtml(r.personalNombre)}</td>
-      <td>${fmtFechaLarga(r.fecha)}</td>
-      <td>${r.turno==='GD'?'Diurno':'Nocturno'}</td>
-      <td>${minToHM(r.totalMin)}</td>
+    if(g.turno==='GN') totalMinGN += g.totalMin; else totalMinGD += g.totalMin;
+
+    const pacientesArr = Object.values(g.porPaciente).sort((a,b)=>b.totalMin-a.totalMin);
+    const subRows = pacientesArr.map((pp,idx)=>{
+      const subKey = g.key+'|'+(pp.pacienteId||'__general__');
+      return `<tr class="clickable dim" data-lic-detalle="${subKey}">
+        <td></td>
+        <td colspan="2" style="padding-left:22px;">↳ ${escapeHtml(pp.pacienteNombre)}</td>
+        <td>${minToHM(pp.totalMin)}</td>
+        <td colspan="2"></td>
+      </tr>`;
+    }).join('');
+
+    return `<tr class="clickable" data-lic-detalle-grupo="${g.key}">
+      <td>${escapeHtml(g.personalNombre)}</td>
+      <td>${fmtFechaLarga(g.fecha)}</td>
+      <td>${g.turno==='GD'?'Diurno':'Nocturno'}</td>
+      <td><b>${minToHM(g.totalMin)}</b></td>
       <td>${horasEstandar}h</td>
       <td><span class="chip ${chip}">${Math.round(pct*100)}% ${estado}</span></td>
-    </tr>`};
-  });
-  rows.sort((a,b)=>b.pct-a.pct);
-  const tableRows = rows.map(x=>x.html).join('') || `<tr><td colspan="6" class="empty-state">Sin registros en el rango seleccionado.</td></tr>`;
+    </tr>` + subRows;
+  }).join('');
+  const tableRows = rowsHtml || `<tr><td colspan="6" class="empty-state">Sin registros en el rango seleccionado.</td></tr>`;
 
   return `
   ${licFiltrosHtml()}
   <div class="summary-cards">
-    <div class="stat-card"><div class="num">${regs.length}</div><div class="lbl">Turnos registrados</div></div>
-    <div class="stat-card"><div class="num">${minToHHMM(totalMin)}</div><div class="lbl">Horas totales</div></div>
-    <div class="stat-card"><div class="num" style="color:var(--danger)">${exceso}</div><div class="lbl">Turnos con exceso</div></div>
-    <div class="stat-card"><div class="num" style="color:var(--muted)">${deficitFuerte}</div><div class="lbl">Muy por debajo (&lt;50%)</div></div>
+    <div class="stat-card"><div class="num">${groups.length}</div><div class="lbl">Turnos registrados</div></div>
+    <div class="stat-card"><div class="num">${minToHHMM(totalMinGD)}</div><div class="lbl">Total turno Diurno</div></div>
+    <div class="stat-card"><div class="num">${minToHHMM(totalMinGN)}</div><div class="lbl">Total turno Nocturno</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--danger)">${minToHHMM(excesoMinTotal)}</div><div class="lbl">Exceso sobre turno estándar (${excesoTurnos} turno${excesoTurnos===1?'':'s'})</div></div>
   </div>
   <div class="card">
-    <div class="row"><h2>Detalle por enfermero y turno</h2>
+    <div class="row"><h2>Detalle por enfermero, turno y paciente</h2>
       <div>
         <button class="btn btn-outline btn-sm" id="btnExportCsvDetalle">Exportar CSV detalle</button>
         <button class="btn btn-outline btn-sm" id="btnExportCsvResumen">Exportar CSV resumen</button>
       </div>
     </div>
+    <p class="muted small">Cada fila principal es el <b>total acumulado del turno</b> (todas las veces que se guardó ese día). Las filas debajo, con ↳, son el desglose por paciente atendido — es normal ver a la misma persona varias veces si atendió a varios pacientes. Toca cualquier fila para ver el detalle de actividades.</p>
     <div class="table-wrap"><table><thead><tr><th>Personal</th><th>Fecha</th><th>Turno</th><th>Total</th><th>Turno estándar</th><th>Estado</th></tr></thead><tbody>${tableRows}</tbody></table></div>
   </div>
   <div id="licDetalleBox"></div>
@@ -812,25 +902,33 @@ function licResumen(){
 function licPorActividad(){
   const regs = filteredRegistros();
   const map = {};
+  let granTotal = 0;
   regs.forEach(r=> r.items.forEach(it=>{
-    const key = it.categoriaNombre+' | '+it.actividadNombre+(it.grado?(' (G'+it.grado.slice(-1)+')'):'');
-    if(!map[key]) map[key] = {categoria: it.categoriaNombre, actividad: it.actividadNombre, grado: it.grado, cantidad:0, minutos:0};
+    const key = it.categoriaNombre+' | '+it.actividadNombre+(it.grado?(' (G'+it.grado.slice(-1)+')'):'')+' | '+r.personalNombre;
+    if(!map[key]) map[key] = {categoria: it.categoriaNombre, actividad: it.actividadNombre, grado: it.grado, personal: r.personalNombre, cantidad:0, minutos:0};
     map[key].cantidad += it.cantidad;
     map[key].minutos += it.subtotal;
+    granTotal += it.subtotal;
   }));
-  const arr = Object.values(map).sort((a,b)=>b.minutos-a.minutos);
+  const arr = Object.values(map).sort((a,b)=> b.minutos-a.minutos);
   const rows = arr.map(x=>`<tr>
     <td>${escapeHtml(x.categoria)}</td>
     <td>${escapeHtml(x.actividad)}${x.grado?' (G'+x.grado.slice(-1)+')':''}</td>
+    <td>${escapeHtml(x.personal)}</td>
     <td>${x.cantidad}</td>
     <td>${minToHM(x.minutos)}</td>
-  </tr>`).join('') || `<tr><td colspan="4" class="empty-state">Sin datos en el rango seleccionado.</td></tr>`;
+  </tr>`).join('') || `<tr><td colspan="5" class="empty-state">Sin datos en el rango seleccionado.</td></tr>`;
   return `
   ${licFiltrosHtml()}
+  <div class="summary-cards" style="grid-template-columns:1fr;">
+    <div class="stat-card"><div class="num">${minToHHMM(granTotal)}</div><div class="lbl">Tiempo total sumado (todas las actividades y personal, en el rango filtrado)</div></div>
+  </div>
   <div class="card">
-    <h2>Tiempo total por actividad</h2>
-    <p class="muted small">Muestra qué actividades consumen más tiempo del equipo en el periodo filtrado.</p>
-    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Cant. total</th><th>Tiempo total</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <h2>Tiempo por actividad y personal</h2>
+    <p class="muted small">Muestra qué actividades consumen más tiempo y quién las realizó, en el periodo filtrado.</p>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Personal</th><th>Cant.</th><th>Tiempo total</th></tr></thead><tbody>${rows}</tbody>
+    ${arr.length ? `<tfoot><tr><th colspan="4" style="text-align:right;">Total general</th><th>${minToHM(granTotal)}</th></tr></tfoot>` : ''}
+    </table></div>
   </div>`;
 }
 
@@ -858,6 +956,42 @@ function licPersonal(){
       <div class="field"><label>Código</label><input id="npCodigo" placeholder="Ej. 1014"></div>
     </div>
     <button class="btn" id="btnAddPersonal">+ Agregar</button>
+  </div>`;
+}
+
+function licPacientes(){
+  const rows = STATE.pacientes.map(p=>`
+    <tr>
+      <td>${escapeHtml(p.nombres)}</td>
+      <td>${escapeHtml(p.apellidos)}</td>
+      <td class="inline-edit"><input data-edit-cama="${p.id}" value="${escapeHtml(p.cama||'')}" style="width:56px;"></td>
+      <td class="inline-edit">
+        <select data-edit-grado="${p.id}">
+          <option value="1" ${p.grado==1?'selected':''}>1</option>
+          <option value="2" ${p.grado==2?'selected':''}>2</option>
+          <option value="3" ${p.grado==3?'selected':''}>3</option>
+        </select>
+      </td>
+      <td><input type="checkbox" data-toggle-activo-paciente="${p.id}" ${p.activo?'checked':''}></td>
+      <td><button class="btn btn-outline btn-sm" data-del-paciente="${p.id}">Eliminar</button></td>
+    </tr>`).join('');
+  return `
+  <div class="card">
+    <h2>Pacientes hospitalizados</h2>
+    <p class="muted small">El grado de dependencia se usa para calcular automáticamente el tiempo de las actividades que dependen del grado del paciente. Actualízalo cuando cambie la clasificación del paciente.</p>
+    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cama</th><th>Grado</th><th>Activo</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty-state">Sin pacientes registrados.</td></tr>`}</tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Registrar paciente</h2>
+    <div class="grid2">
+      <div class="field"><label>Nombres</label><input id="npacNombres"></div>
+      <div class="field"><label>Apellidos</label><input id="npacApellidos"></div>
+      <div class="field"><label>Cama</label><input id="npacCama"></div>
+      <div class="field"><label>Grado</label>
+        <select id="npacGrado"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select>
+      </div>
+    </div>
+    <button class="btn" id="btnAddPaciente">+ Agregar paciente</button>
   </div>`;
 }
 
@@ -940,11 +1074,29 @@ function bindLicenciadaEvents(){
   const filPersonal = document.getElementById('filPersonal');
   if(filPersonal) filPersonal.onchange = ()=>{ licFiltro.personalId = filPersonal.value; render(); };
 
-  document.querySelectorAll('[data-lic-detalle]').forEach(el=>{
+  document.querySelectorAll('[data-lic-detalle-grupo]').forEach(el=>{
     el.onclick = ()=>{
-      const id = el.getAttribute('data-lic-detalle');
-      const r = STATE.registros.find(x=>x.id===id);
-      showRegistroDetalle(r, 'licDetalleBox');
+      const key = el.getAttribute('data-lic-detalle-grupo');
+      const groups = buildResumenGroups();
+      const g = groups.find(x=>x.key===key);
+      if(!g) return;
+      const allItems = Object.values(g.porPaciente).flatMap(pp=>pp.items);
+      showRegistroDetalle(allItems, 'licDetalleBox', g.personalNombre+' — '+fmtFechaLarga(g.fecha)+' ('+(g.turno==='GD'?'Diurno':'Nocturno')+') — Todos los pacientes');
+    };
+  });
+  document.querySelectorAll('[data-lic-detalle]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      const key = el.getAttribute('data-lic-detalle');
+      const parts = key.split('|');
+      const pid = parts.pop();
+      const groupKey = parts.join('|');
+      const groups = buildResumenGroups();
+      const g = groups.find(x=>x.key===groupKey);
+      if(!g) return;
+      const pp = g.porPaciente[pid];
+      if(!pp) return;
+      showRegistroDetalle(pp.items, 'licDetalleBox', g.personalNombre+' — '+fmtFechaLarga(g.fecha)+' ('+(g.turno==='GD'?'Diurno':'Nocturno')+') — '+pp.pacienteNombre);
     };
   });
 
@@ -986,6 +1138,45 @@ function bindLicenciadaEvents(){
     };
   }
 
+  // Pacientes
+  document.querySelectorAll('[data-edit-cama]').forEach(el=>{
+    el.onchange = ()=>{
+      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-edit-cama'));
+      p.cama = el.value.trim(); saveState(); toast('Cama actualizada');
+    };
+  });
+  document.querySelectorAll('[data-edit-grado]').forEach(el=>{
+    el.onchange = ()=>{
+      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-edit-grado'));
+      p.grado = Number(el.value); saveState(); toast('Grado actualizado');
+    };
+  });
+  document.querySelectorAll('[data-toggle-activo-paciente]').forEach(el=>{
+    el.onchange = ()=>{
+      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-toggle-activo-paciente'));
+      p.activo = el.checked; saveState();
+    };
+  });
+  document.querySelectorAll('[data-del-paciente]').forEach(el=>{
+    el.onclick = ()=>{
+      if(!confirm('¿Eliminar este paciente? Los registros históricos que lo mencionan se conservarán.')) return;
+      STATE.pacientes = STATE.pacientes.filter(p=>p.id!==el.getAttribute('data-del-paciente'));
+      saveState(); render();
+    };
+  });
+  const btnAddPaciente = document.getElementById('btnAddPaciente');
+  if(btnAddPaciente){
+    btnAddPaciente.onclick = ()=>{
+      const nombres = document.getElementById('npacNombres').value.trim();
+      const apellidos = document.getElementById('npacApellidos').value.trim();
+      const cama = document.getElementById('npacCama').value.trim();
+      const grado = Number(document.getElementById('npacGrado').value);
+      if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
+      STATE.pacientes.push({id: uid('pac'), nombres, apellidos, cama, grado, fechaIngreso:todayISO(), fechaAlta:'', activo:true});
+      saveState(); render(); toast('Paciente registrado');
+    };
+  }
+
   // Catalogo
   document.querySelectorAll('[data-act][data-grado]').forEach(el=>{
     el.onchange = ()=>{
@@ -1008,10 +1199,6 @@ function bindLicenciadaEvents(){
       cat.actividades = cat.actividades.filter(a=>a.id!==actId);
       saveState(); render();
     };
-  });
-  STATE.catalogo.forEach(cat=>{
-    const btn = document.getElementById('newActTipo_'+cat.id);
-    // no-op, dropdown itself needs no listener beyond default
   });
   document.querySelectorAll('[data-add-act]').forEach(el=>{
     el.onclick = ()=>{
@@ -1085,7 +1272,7 @@ function bindLicenciadaEvents(){
 }
 
 function mergeState(incoming){
-  // Merge registros by id (avoid duplicates), merge personal by id, keep local catalogo/config unless missing.
+  // Merge registros por id (evita duplicados), merge personal y pacientes por id.
   if(Array.isArray(incoming.registros)){
     const existingIds = new Set(STATE.registros.map(r=>r.id));
     incoming.registros.forEach(r=>{ if(!existingIds.has(r.id)) STATE.registros.push(r); });
@@ -1094,26 +1281,30 @@ function mergeState(incoming){
     const existingIds = new Set(STATE.personal.map(p=>p.id));
     incoming.personal.forEach(p=>{ if(!existingIds.has(p.id)) STATE.personal.push(p); });
   }
+  if(Array.isArray(incoming.pacientes)){
+    const existingIds = new Set(STATE.pacientes.map(p=>p.id));
+    incoming.pacientes.forEach(p=>{ if(!existingIds.has(p.id)) STATE.pacientes.push(p); });
+  }
 }
 
 /* ------------------------------ Exportar CSV ------------------------------ */
 function exportCsvDetalle(){
   const regs = filteredRegistros();
-  let out = ['Fecha;Turno;Personal;Categoria;Actividad;Grado;Cantidad;MinutoPorUnidad;SubtotalMin'];
+  let out = ['Fecha;Turno;Personal;Paciente;Categoria;Actividad;Grado;Cantidad;MinutoPorUnidad;SubtotalMin'];
   regs.forEach(r=>{
     r.items.forEach(it=>{
-      out.push([r.fecha, r.turno, r.personalNombre, it.categoriaNombre, it.actividadNombre, it.grado||'', it.cantidad, it.tiempoUnit, it.subtotal].map(csvEscape).join(';'));
+      out.push([r.fecha, r.turno, r.personalNombre, it.pacienteNombre||'', it.categoriaNombre, it.actividadNombre, it.grado||'', it.cantidad, it.tiempoUnit, it.subtotal].map(csvEscape).join(';'));
     });
   });
   downloadFile('detalle_productividad_'+todayISO()+'.csv', out.join('\n'), 'text/csv;charset=utf-8');
 }
 function exportCsvResumen(){
-  const regs = filteredRegistros();
+  const groups = buildResumenGroups();
   let out = ['Fecha;Turno;Personal;TotalMin;TotalHHMM;HorasEstandar;Porcentaje'];
-  regs.forEach(r=>{
-    const horasEstandar = r.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
-    const pct = horasEstandar>0 ? Math.round(((r.totalMin/60)/horasEstandar)*100) : 0;
-    out.push([r.fecha, r.turno, r.personalNombre, r.totalMin, minToHM(r.totalMin), horasEstandar, pct+'%'].map(csvEscape).join(';'));
+  groups.forEach(g=>{
+    const horasEstandar = g.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
+    const pct = horasEstandar>0 ? Math.round((g.totalMin/60/horasEstandar)*100) : 0;
+    out.push([g.fecha, g.turno, g.personalNombre, g.totalMin, minToHM(g.totalMin), horasEstandar, pct+'%'].map(csvEscape).join(';'));
   });
   downloadFile('resumen_productividad_'+todayISO()+'.csv', out.join('\n'), 'text/csv;charset=utf-8');
 }
