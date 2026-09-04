@@ -133,6 +133,7 @@ tr:last-child td{border-bottom:none;}
 .badge-origen{font-size:10px; padding:1px 7px; border-radius:8px; background:#eef1f4; color:var(--muted); margin-left:6px;}
 .clickable{cursor:pointer;}
 .dim{opacity:.55;}
+.person-row td{background:var(--primary-light); font-weight:700; border-top:2px solid var(--border); padding-top:9px; padding-bottom:9px;}
 footer.appfoot{text-align:center; color:var(--muted); font-size:12px; padding:18px 10px 40px;}
 hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 .inline-edit input{width:64px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center;}
@@ -981,7 +982,7 @@ function licResumen(){
   const margen = STATE.config.margenAlerta || 0.9;
   let excesoTurnos=0, excesoMinTotal=0, deficitFuerte=0, totalMinGD=0, totalMinGN=0;
 
-  const rowsHtml = groups.map(g=>{
+  const enriched = groups.map(g=>{
     const horasEstandar = g.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
     const estandarMin = horasEstandar*60;
     const pct = estandarMin>0 ? g.totalMin/estandarMin : 0;
@@ -990,33 +991,55 @@ function licResumen(){
     else if(pct>=margen){ chip='chip-warn'; estado='Cerca del límite'; }
     else if(pct<0.5){ chip='chip-muted'; estado='Muy por debajo'; deficitFuerte++; }
     if(g.turno==='GN') totalMinGN += g.totalMin; else totalMinGD += g.totalMin;
+    return Object.assign({}, g, { horasEstandar, pct, chip, estado });
+  });
 
-    const pacientesArr = Object.values(g.porPaciente).sort((a,b)=>b.totalMin-a.totalMin);
-    const subRows = pacientesArr.map((pp,idx)=>{
-      const subKey = g.key+'|'+(pp.pacienteId||'__general__');
-      return `<tr class="clickable dim" data-lic-detalle="${subKey}">
+  // Se agrupa primero por PERSONA (no por turno suelto): así, si un
+  // enfermero/a guarda su turno en varios momentos separados, o trabaja
+  // más de un turno el mismo día, todo queda acumulado bajo su nombre en
+  // vez de aparecer como filas sueltas y desconectadas.
+  const porPersona = {};
+  enriched.forEach(g=>{
+    if(!porPersona[g.personalId]) porPersona[g.personalId] = { personalId:g.personalId, personalNombre:g.personalNombre, totalMin:0, turnos:[] };
+    porPersona[g.personalId].totalMin += g.totalMin;
+    porPersona[g.personalId].turnos.push(g);
+  });
+  const personasArr = Object.values(porPersona).sort((a,b)=> b.totalMin - a.totalMin);
+  personasArr.forEach(p=> p.turnos.sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.totalMin-a.totalMin));
+
+  const rowsHtml = personasArr.map(p=>{
+    const turnoRows = p.turnos.map(g=>{
+      const pacientesArr = Object.values(g.porPaciente).sort((a,b)=>b.totalMin-a.totalMin);
+      const subRows = pacientesArr.map(pp=>{
+        const subKey = g.key+'|'+(pp.pacienteId||'__general__');
+        return `<tr class="clickable dim" data-lic-detalle="${subKey}">
+          <td></td>
+          <td colspan="2" style="padding-left:30px;">↳ ${escapeHtml(pp.pacienteNombre)}</td>
+          <td>${minToHM(pp.totalMin)}</td>
+          <td colspan="2"></td>
+        </tr>`;
+      }).join('');
+      return `<tr class="clickable" data-lic-detalle-grupo="${g.key}">
         <td></td>
-        <td colspan="2" style="padding-left:22px;">↳ ${escapeHtml(pp.pacienteNombre)}</td>
-        <td>${minToHM(pp.totalMin)}</td>
-        <td colspan="2"></td>
-      </tr>`;
+        <td style="padding-left:16px;">${fmtFechaLarga(g.fecha)}</td>
+        <td>${g.turno==='GD'?'Diurno':'Nocturno'}</td>
+        <td><b>${minToHM(g.totalMin)}</b></td>
+        <td>${g.horasEstandar}h</td>
+        <td><span class="chip ${g.chip}">${Math.round(g.pct*100)}% ${g.estado}</span></td>
+      </tr>` + subRows;
     }).join('');
-
-    return `<tr class="clickable" data-lic-detalle-grupo="${g.key}">
-      <td>${escapeHtml(g.personalNombre)}</td>
-      <td>${fmtFechaLarga(g.fecha)}</td>
-      <td>${g.turno==='GD'?'Diurno':'Nocturno'}</td>
-      <td><b>${minToHM(g.totalMin)}</b></td>
-      <td>${horasEstandar}h</td>
-      <td><span class="chip ${chip}">${Math.round(pct*100)}% ${estado}</span></td>
-    </tr>` + subRows;
+    return `<tr class="person-row">
+      <td colspan="3">${escapeHtml(p.personalNombre)}</td>
+      <td>${minToHM(p.totalMin)}</td>
+      <td colspan="2">${p.turnos.length} turno${p.turnos.length===1?'':'s'} en el periodo</td>
+    </tr>` + turnoRows;
   }).join('');
   const tableRows = rowsHtml || `<tr><td colspan="6" class="empty-state">Sin registros en el rango seleccionado.</td></tr>`;
 
   return `
   ${licFiltrosHtml()}
   <div class="summary-cards">
-    <div class="stat-card"><div class="num">${groups.length}</div><div class="lbl">Turnos registrados</div></div>
+    <div class="stat-card"><div class="num">${enriched.length}</div><div class="lbl">Turnos registrados</div></div>
     <div class="stat-card"><div class="num">${minToHHMM(totalMinGD)}</div><div class="lbl">Total turno Diurno</div></div>
     <div class="stat-card"><div class="num">${minToHHMM(totalMinGN)}</div><div class="lbl">Total turno Nocturno</div></div>
     <div class="stat-card"><div class="num" style="color:var(--danger)">${minToHHMM(excesoMinTotal)}</div><div class="lbl">Exceso sobre turno estándar (${excesoTurnos} turno${excesoTurnos===1?'':'s'})</div></div>
@@ -1030,7 +1053,7 @@ function licResumen(){
         <button class="btn btn-sm" id="btnExportExcel">📊 Exportar reporte Excel (.xlsx)</button>
       </div>
     </div>
-    <p class="muted small">Cada fila principal es el <b>total acumulado del turno</b> (todas las veces que se guardó ese día). Las filas debajo, con ↳, son el desglose por paciente atendido — es normal ver a la misma persona varias veces si atendió a varios pacientes. Toca cualquier fila para ver el detalle de actividades.</p>
+    <p class="muted small">Cada <b>fila resaltada</b> es un enfermero/a, con el total acumulado de <b>todo el periodo filtrado</b> (sin importar cuántas veces guardó, ni si lo hizo en momentos distintos). Debajo se despliegan sus turnos (fecha + Diurno/Nocturno) y, dentro de cada uno, el desglose por paciente atendido (↳). Toca cualquier fila de turno o paciente para ver el detalle de actividades.</p>
     <div class="table-wrap"><table><thead><tr><th>Personal</th><th>Fecha</th><th>Turno</th><th>Total</th><th>Turno estándar</th><th>Estado</th></tr></thead><tbody>${tableRows}</tbody></table></div>
   </div>
   <div id="licDetalleBox"></div>
