@@ -156,17 +156,44 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 </header>
 <main id="main"></main>
 <div id="modalRoot"></div>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
 /* ======================================================================
    Control de Productividad UCI - Enfermería
-   App 100% cliente (sin backend). Datos en localStorage del navegador.
+   App de un solo archivo HTML/JS. Los datos viven en Firestore (Firebase),
+   compartidos en tiempo real entre todos los dispositivos autorizados.
+   Acceso protegido por Google Sign-In + lista blanca de correos
+   (colección authorized_emails). Ver README.md para el detalle.
    ====================================================================== */
 
 const CATALOGO_SEED = [{"id": "2-control-de-s-v", "nombre": "Control de Signos Vitales", "actividades": [{"id": "2-control-de-s-v-p-a", "nombre": "P/A", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-p-fc", "nombre": "P - FC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-fr", "nombre": "FR", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 2, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-t", "nombre": "T°", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-sp02", "nombre": "SP02", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-control-del-dolor", "nombre": "Control del dolor", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-valoracion-glasgow", "nombre": "Valoracion glasgow", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "2-control-de-s-v-higiene-integral-del-paciente", "nombre": "Higiene Integral del Paciente", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "2-control-de-s-v-limpieza-cavidad-oral", "nombre": "Limpieza Cavidad Oral", "origen": "adicional", "gradoDependiente": true, "tiempos": {"grado1": 7, "grado2": 7, "grado3": 7}}]}, {"id": "3-aministracion-de-tto", "nombre": "Administración de Tratamiento", "actividades": [{"id": "3-aministracion-de-tto-oral", "nombre": "Oral", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sublingual", "nombre": "Sublingual", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 4, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-parenteral-id", "nombre": "Parenteral - Intradérmica (ID)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 3, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-sc", "nombre": "Parenteral - Subcutánea (SC)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-im", "nombre": "Parenteral - Intramuscular (IM)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 5, "grado3": 5}}, {"id": "3-aministracion-de-tto-ev", "nombre": "Parenteral - Endovenosa (EV)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 5, "grado3": 10}}, {"id": "3-aministracion-de-tto-por-sng", "nombre": "Por SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-oticos-nasales-oftalmicos", "nombre": "Oticos, nasales, oftalmicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "3-aministracion-de-tto-topico", "nombre": "Tópico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 20}}, {"id": "3-aministracion-de-tto-rectal-vaginal", "nombre": "Rectal Vaginal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-inhalatoria", "nombre": "Inhalatoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "3-aministracion-de-tto-fluidos-endovenosos", "nombre": "Fluidos endovenosos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "3-aministracion-de-tto-fluidos-especiales", "nombre": "Fluidos especiales", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "3-aministracion-de-tto-infusion", "nombre": "Infusion", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 7}, {"id": "3-aministracion-de-tto-nutricion-parenteral", "nombre": "Nutricion parenteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "3-aministracion-de-tto-nutricion-enteral", "nombre": "Nutricion enteral", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "4-procedimientos", "nombre": "Procedimientos", "actividades": [{"id": "4-procedimientos-via-periferica", "nombre": "Vía Periferica", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-toma-de-muestra-aga-elec", "nombre": "Toma de muestra: AGA/ELEC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "4-procedimientos-control-pvc", "nombre": "Control PVC", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-transfusion-sanguinea", "nombre": "Transfusión sanguinea", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plasma", "nombre": "Transfusión de  Plasma", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-transfusion-de-plaquetas", "nombre": "Transfusión de  Plaquetas", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-toma-de-ecg", "nombre": "Toma de ECG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 20, "grado3": 25}}, {"id": "4-procedimientos-oxigenoterapia", "nombre": "Oxigenoterapia", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-aspiracion-de-secreciones", "nombre": "Aspiración de secreciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-ventiloterapia-vent-mecanico", "nombre": "Ventiloterapia: vent. Mecanico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 30, "grado3": 30}}, {"id": "4-procedimientos-bh", "nombre": "BH", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-nebulizaciones", "nombre": "Nebulizaciones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-fisioterapia-respiratoria", "nombre": "Fisioterapia Respiratoria", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 15}}, {"id": "4-procedimientos-drenaje-postural", "nombre": "Drenaje postural", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-de-sonda-naso-yeyuno", "nombre": "Lavado de Sonda naso yeyuno", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 6, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-lavado-gastrico", "nombre": "Lavado gástrico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-lavado-vesical", "nombre": "Lavado vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 15, "grado3": 10}}, {"id": "4-procedimientos-manejo-de-via-aerea-tet", "nombre": "Manejo de vía aérea: TET", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tqt", "nombre": "Manejo de vía aérea - TQT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-tubo-ot", "nombre": "Manejo de vía aérea - Tubo OT", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 10, "grado2": 10, "grado3": 10}}, {"id": "4-procedimientos-cateterismo-vesical", "nombre": "Cateterismo - Vesical", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-sng", "nombre": "Cateterismo - SNG", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-rectal", "nombre": "Cateterismo - Rectal", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 15}}, {"id": "4-procedimientos-curacion-de-via-perif", "nombre": "Curacion de Vía Perif.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-curacion-via-central", "nombre": "Curacion Vía central", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-hemoglucotex", "nombre": "Hemoglucotex", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-asistencia-en-instalac-avc", "nombre": "Asistencia en instalac.AVC", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-prueba-cruzada", "nombre": "Prueba cruzada", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-toma-muestra-sangre", "nombre": "Toma muestra Sangre", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "4-procedimientos-desarmado-de-vm", "nombre": "Desarmado de VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-desind-y-empaque-vm", "nombre": "Desind. y empaque VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "4-procedimientos-armado-y-operat-vm", "nombre": "Armado y operat. VM", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-muestra-aspirado-traqueal", "nombre": "Muestra Aspirado traqueal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-via-periferica", "nombre": "Retiro de via periferica", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 4}, {"id": "4-procedimientos-cuidado-de-via-aerea-tet", "nombre": "Cuidado de vía aérea: TET", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "4-procedimientos-retiro-de-sonda-foley", "nombre": "Retiro de sonda foley", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}]}, {"id": "5-monitoreo-hemodinamico", "nombre": "Monitoreo Hemodinámico", "actividades": [{"id": "5-monitoreo-hemodinamico-cardiaco", "nombre": "Cardiaco", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}, {"id": "5-monitoreo-hemodinamico-respiratorio", "nombre": "Respiratorio", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 20}}, {"id": "5-monitoreo-hemodinamico-neurologico", "nombre": "Neurológico", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 5, "grado2": 15, "grado3": 10}}]}, {"id": "6-atenc-enf-en-emergencia", "nombre": "Atención de Enfermería en Emergencia", "actividades": [{"id": "6-atenc-enf-en-emergencia-r-c-p", "nombre": "R.C.P.", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 30}}, {"id": "6-atenc-enf-en-emergencia-hemoptisis", "nombre": "Hemoptisis", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 15, "grado3": 10}}, {"id": "6-atenc-enf-en-emergencia-convulsiones", "nombre": "Convulsiones", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 15, "grado2": 20, "grado3": 20}}, {"id": "6-atenc-enf-en-emergencia-shock-h-c-n-a", "nombre": "Shock  (H, C, N, A)", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 30, "grado2": 45, "grado3": 40}}]}, {"id": "7-otras-activ-asistenciales", "nombre": "Otras Actividades Asistenciales", "actividades": [{"id": "7-otras-activ-asistenciales-hospitalizacion-servicios-sop", "nombre": "Hospitalizacion.: Servicios,SOP", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-particip-exam-auxiliares-rx", "nombre": "Particip. Exam. auxiliares:Rx…", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-traslado-asist-intrahospitalario", "nombre": "Traslado asist. intrahospitalario", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 15, "grado3": 20}}, {"id": "7-otras-activ-asistenciales-reporter-de-enfermeria", "nombre": "Reporter de Enfermería", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-registro-proceso-soapie", "nombre": "Registro:PROCESO/SOAPIE", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 10, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-supervision-tec-estud-inter", "nombre": "Supervisión Téc./Estud./Inter...", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 5}}, {"id": "7-otras-activ-asistenciales-particip-en-procedim-medicos", "nombre": "Particip. en procedim. Médicos", "origen": "oficial", "gradoDependiente": true, "tiempos": {"grado1": 1, "grado2": 3, "grado3": 10}}, {"id": "7-otras-activ-asistenciales-traslado-asist-extrahospitalario", "nombre": "Traslado asist. Extrahospitalario", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}]}, {"id": "8-funcion-administrativa", "nombre": "Función Administrativa", "actividades": [{"id": "8-funcion-administrativa-paso-visita-con-medico", "nombre": "Paso visita con medico", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-ingreso-paciente", "nombre": "Tramite ingreso paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-tramite-alta-paciente", "nombre": "Tramite alta paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-registro-y-pegado-de-resultados", "nombre": "Registro y pegado de resultados", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 1}, {"id": "8-funcion-administrativa-actualizacion-de-pizarras", "nombre": "Actualizacion de pizarras", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 2}, {"id": "8-funcion-administrativa-preparacion-de-hcl", "nombre": "Preparacion de HCl.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-coord-transf-referecia", "nombre": "Coord. Transf/ referecia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-educacion-al-paciente", "nombre": "Educacion al paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-educacion-a-la-familia", "nombre": "Educacion a la familia", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 10}, {"id": "8-funcion-administrativa-valoracion-riesgo-caidas", "nombre": "Valoracion Riesgo Caidas", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-caida-de-paciente", "nombre": "Caida de paciente", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-valoracion-riesgo-upp", "nombre": "Valoracion riesgo UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-upp", "nombre": "Paciente con UPP", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-paciente-con-flebitis", "nombre": "Paciente con flebitis", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 5}, {"id": "8-funcion-administrativa-monitoreo-de-actividades-asist", "nombre": "Monitoreo de actividades asist.", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-supervision-al-personal", "nombre": "Supervision  al  personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-distribucion-del-personal", "nombre": "Distribucion del personal", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-orientacion-estudiantes-pers-nuevo", "nombre": "Orientacion estudiantes /pers. Nuevo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-elab-de-roles-de-trabajo", "nombre": "Elab. De roles de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-reunion-de-trabajo", "nombre": "Reunión de Trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reunion-de-capacitacion", "nombre": "Reunión de Capacitación", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reuniones-de-equipo", "nombre": "Reuniones de Equipo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-reporte-de-accidentes-de-trabajo", "nombre": "Reporte de accidentes de trabajo", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}, {"id": "8-funcion-administrativa-doc-intrainstitucional-estudiantil", "nombre": "Doc. Intrainstitucional estudiantil", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-docencia-extrainstitucional", "nombre": "Docencia extrainstitucional", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 30}, {"id": "8-funcion-administrativa-otras-act-de-ensenanza-aprendiz", "nombre": "Otras act. De enseñanza/aprendiz", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 20}, {"id": "8-funcion-administrativa-tramite-administrativo-de-documentos", "nombre": "Trámite administrativo de documentos", "origen": "adicional", "gradoDependiente": false, "tiempoFijo": 15}]}];
 const PERSONAL_SEED = [{"nombres": "Dina", "apellidos": "Aguilar", "cargo": "Enfermera", "id": "p1", "codigo": "1001", "activo": true}, {"nombres": "Yolanda", "apellidos": "Chacolla", "cargo": "Administradora", "id": "p2", "codigo": "1002", "activo": true}, {"nombres": "Juana", "apellidos": "Fernández", "cargo": "Enfermera", "id": "p3", "codigo": "1003", "activo": true}, {"nombres": "Roberto", "apellidos": "Guevara Arredondo", "cargo": "Enfermero", "id": "p4", "codigo": "1004", "activo": true}, {"nombres": "Enoc", "apellidos": "López", "cargo": "Enfermero", "id": "p5", "codigo": "1005", "activo": true}, {"nombres": "Julia", "apellidos": "Roque", "cargo": "Enfermera", "id": "p6", "codigo": "1006", "activo": true}, {"nombres": "Mariela", "apellidos": "Sánchez", "cargo": "Enfermera", "id": "p7", "codigo": "1007", "activo": true}, {"nombres": "Miguel Augusto", "apellidos": "Solórzano Durán", "cargo": "Enfermero", "id": "p8", "codigo": "1008", "activo": true}, {"nombres": "Dóris Candelaria", "apellidos": "Ticona Salcedo", "cargo": "Enfermera", "id": "p9", "codigo": "1009", "activo": true}, {"nombres": "Marina", "apellidos": "Vera", "cargo": "Enfermera", "id": "p10", "codigo": "1010", "activo": true}, {"nombres": "Ana", "apellidos": "Vizcarra", "cargo": "Enfermera", "id": "p11", "codigo": "1011", "activo": true}, {"nombres": "Moisés", "apellidos": "Yabar", "cargo": "Enfermero", "id": "p12", "codigo": "1012", "activo": true}, {"nombres": "Glenda", "apellidos": "Morris Flores", "cargo": "Enfermera", "id": "p13", "codigo": "1013", "activo": true}];
 const PACIENTES_SEED = [{"nombres": "Lorenzo", "apellidos": "Mestas Pacheco", "cama": "414", "grado": 2, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac1"}, {"nombres": "Juan", "apellidos": "Calizaya", "cama": "413", "grado": 1, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac2"}, {"nombres": "Robert", "apellidos": "Martinez Mamani", "cama": "415", "grado": 3, "fechaIngreso": "", "fechaAlta": "", "activo": true, "id": "pac3"}];
-const STORAGE_KEY = 'uci_productividad_v1';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
+
+/* ------------------------- Firebase (nube) ---------------------------
+   Los datos ya no viven solo en este navegador: se guardan en Firestore
+   para que la Licenciada y todo el personal vean lo mismo desde
+   cualquier celular o computadora, en tiempo real. El acceso está
+   restringido por correo de Google (ver authorized_emails más abajo). */
+const firebaseConfig = {
+  apiKey: "AIzaSyDTwDKe5L-zT47ZCEEIHTHGGbljbH7kdjw",
+  authDomain: "samc-nurse-activity-score.firebaseapp.com",
+  projectId: "samc-nurse-activity-score",
+  storageBucket: "samc-nurse-activity-score.firebasestorage.app",
+  messagingSenderId: "10983418291",
+  appId: "1:10983418291:web:501cc192841956991003c6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let AUTH_USER = null;         // usuario de Google actual (objeto de Firebase Auth) o null
+let AUTH_STATE = 'checking';  // 'checking' | 'signedout' | 'unauthorized' | 'ready'
+let AUTHORIZED_EMAILS = [];   // [{id:email, addedAt, addedBy}, ...] — lista blanca de accesos
+let firestoreUnsubs = [];     // des-suscriptores de los listeners en vivo de Firestore
 
 /* ---------------------------- Utilidades ---------------------------- */
 function uid(prefix){ return (prefix||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
@@ -213,41 +240,84 @@ function downloadFile(filename, content, mime){
 }
 
 /* ------------------------------ Estado ------------------------------- */
-let STATE = null;
-
-function defaultState(){
-  return {
-    version: SCHEMA_VERSION,
-    personal: JSON.parse(JSON.stringify(PERSONAL_SEED)),
-    pacientes: JSON.parse(JSON.stringify(PACIENTES_SEED)),
-    catalogo: JSON.parse(JSON.stringify(CATALOGO_SEED)),
-    registros: [],
-    config: {
-      horasTurnoGD: 12,
-      horasTurnoGN: 12,
-      margenAlerta: 0.90
-    }
-  };
+function defaultConfig(){
+  return { horasTurnoGD: 12, horasTurnoGN: 12, margenAlerta: 0.90 };
 }
 
-function loadState(){
+// STATE es un espejo local (en memoria) de lo que hay en Firestore.
+// Se llena y se mantiene actualizado solo mediante los listeners en vivo
+// de attachFirestoreListeners() — nunca se escribe "STATE.x.push(...)" y
+// listo; cada cambio se manda a Firestore y el listener trae el reflejo.
+let STATE = {
+  personal: [], pacientes: [], catalogo: [], registros: [], config: defaultConfig()
+};
+
+function saveCatalogo(){
+  db.collection('meta').doc('catalogo').set({ categorias: STATE.catalogo })
+    .catch(e=>{ console.error(e); toast('Error guardando catálogo en la nube: '+e.message); });
+}
+function saveConfig(){
+  db.collection('meta').doc('config').set(STATE.config)
+    .catch(e=>{ console.error(e); toast('Error guardando configuración en la nube: '+e.message); });
+}
+
+// La primera vez que alguien autorizado entra a una base de datos recién
+// creada (vacía), se siembra con los catálogos/plantillas por defecto.
+// Si ya hay datos, esto no hace nada.
+async function seedFirestoreIfEmpty(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw){ STATE = defaultState(); saveState(); return; }
-    STATE = JSON.parse(raw);
-    if(!STATE.config) STATE.config = defaultState().config;
-    if(!STATE.personal) STATE.personal = JSON.parse(JSON.stringify(PERSONAL_SEED));
-    if(!STATE.catalogo) STATE.catalogo = JSON.parse(JSON.stringify(CATALOGO_SEED));
-    if(!STATE.registros) STATE.registros = [];
-    if(!STATE.pacientes) STATE.pacientes = JSON.parse(JSON.stringify(PACIENTES_SEED));
+    const metaCat = await db.collection('meta').doc('catalogo').get();
+    if(!metaCat.exists) await db.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+    const metaCfg = await db.collection('meta').doc('config').get();
+    if(!metaCfg.exists) await db.collection('meta').doc('config').set(defaultConfig());
+    const personalSnap = await db.collection('personal').limit(1).get();
+    if(personalSnap.empty){
+      const batch = db.batch();
+      PERSONAL_SEED.forEach(p=> batch.set(db.collection('personal').doc(p.id), p));
+      await batch.commit();
+    }
+    const pacientesSnap = await db.collection('pacientes').limit(1).get();
+    if(pacientesSnap.empty){
+      const batch = db.batch();
+      PACIENTES_SEED.forEach(p=> batch.set(db.collection('pacientes').doc(p.id), p));
+      await batch.commit();
+    }
   }catch(e){
-    console.error('Error cargando datos, se reinicia almacenamiento local', e);
-    STATE = defaultState();
-    saveState();
+    console.error('Error inicializando datos en la nube', e);
   }
 }
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(STATE));
+
+function detachFirestoreListeners(){
+  firestoreUnsubs.forEach(u=>{ try{ u(); }catch(e){} });
+  firestoreUnsubs = [];
+}
+
+function attachFirestoreListeners(){
+  detachFirestoreListeners();
+  firestoreUnsubs.push(db.collection('personal').onSnapshot(snap=>{
+    STATE.personal = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener personal', e)));
+  firestoreUnsubs.push(db.collection('pacientes').onSnapshot(snap=>{
+    STATE.pacientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener pacientes', e)));
+  firestoreUnsubs.push(db.collection('registros').onSnapshot(snap=>{
+    STATE.registros = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener registros', e)));
+  firestoreUnsubs.push(db.collection('meta').doc('catalogo').onSnapshot(doc=>{
+    if(doc.exists) STATE.catalogo = doc.data().categorias || [];
+    render();
+  }, e=>console.error('listener catalogo', e)));
+  firestoreUnsubs.push(db.collection('meta').doc('config').onSnapshot(doc=>{
+    if(doc.exists) STATE.config = doc.data();
+    render();
+  }, e=>console.error('listener config', e)));
+  firestoreUnsubs.push(db.collection('authorized_emails').onSnapshot(snap=>{
+    AUTHORIZED_EMAILS = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener authorized_emails', e)));
 }
 
 function pacientesActivos(){
@@ -300,13 +370,62 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
 
 /* ------------------------------ Render -------------------------------- */
 function render(){
-  updateTopbar();
   const main = document.getElementById('main');
+  if(AUTH_STATE !== 'ready'){
+    const badge = document.getElementById('userBadge');
+    badge.classList.add('hidden');
+    document.getElementById('brandSub').textContent = 'Registro de actividades de enfermería';
+    main.innerHTML = viewAuthGate();
+    bindAuthGateEvents();
+    return;
+  }
+  updateTopbar();
   if(VIEW === 'login') main.innerHTML = viewLogin();
   else if(VIEW === 'registro') main.innerHTML = viewRegistro();
   else if(VIEW === 'historial') main.innerHTML = viewHistorial();
   else if(VIEW === 'licDash') main.innerHTML = viewLicenciada();
   bindViewEvents();
+}
+
+/* ============================ ACCESO (Google) ========================== */
+function viewAuthGate(){
+  if(AUTH_STATE === 'checking'){
+    return `<div class="login-wrap"><div class="card center"><div class="login-logo">🩺</div><p class="muted">Cargando…</p></div></div>`;
+  }
+  if(AUTH_STATE === 'unauthorized'){
+    return `
+    <div class="login-wrap">
+      <div class="card center">
+        <div class="login-logo">⛔</div>
+        <h2>Sin acceso todavía</h2>
+        <p class="muted small">La cuenta <b>${escapeHtml(AUTH_USER ? AUTH_USER.email : '')}</b> inició sesión correctamente, pero no está en la lista de correos autorizados para esta app.</p>
+        <p class="muted small">Pide a la Licenciada que agregue tu correo desde el Panel Licenciada → Accesos, y vuelve a intentar.</p>
+        <button class="btn btn-outline btn-block" id="btnSignOut">Cerrar sesión / usar otra cuenta</button>
+      </div>
+    </div>`;
+  }
+  // 'signedout'
+  return `
+  <div class="login-wrap">
+    <div class="card center">
+      <div class="login-logo">🩺</div>
+      <h2>Productividad UCI</h2>
+      <p class="muted small">Inicia sesión con tu cuenta de Google para continuar. Solo los correos autorizados por la Licenciada pueden entrar.</p>
+      <button class="btn btn-block" id="btnGoogleSignIn">Iniciar sesión con Google</button>
+    </div>
+  </div>`;
+}
+function bindAuthGateEvents(){
+  const btnG = document.getElementById('btnGoogleSignIn');
+  if(btnG) btnG.onclick = ()=>{
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(e=>{
+      console.error(e);
+      toast('No se pudo iniciar sesión: '+e.message);
+    });
+  };
+  const btnOut = document.getElementById('btnSignOut');
+  if(btnOut) btnOut.onclick = ()=> auth.signOut();
 }
 
 /* ============================== LOGIN ================================ */
@@ -648,20 +767,28 @@ function bindViewEvents(){
   if(btnAddAct) btnAddAct.onclick = openAddModal;
   const btnGuardar = document.getElementById('btnGuardarTurno');
   if(btnGuardar){
-    btnGuardar.onclick = ()=>{
+    btnGuardar.onclick = async ()=>{
       if(draft.items.length===0){ toast('Agrega al menos una actividad'); return; }
       const p = STATE.personal.find(x=>x.id===SESSION.personalId);
-      STATE.registros.push({
-        id: uid('reg'),
+      const id = uid('reg');
+      const registro = {
         personalId: p.id, personalNombre: p.nombres+' '+p.apellidos,
         fecha: draft.fecha, turno: draft.turno,
         items: draft.items, totalMin: draftTotal(),
-        creado: Date.now(), actualizado: Date.now()
-      });
-      saveState();
-      draft = null;
-      toast('Turno guardado correctamente');
-      goto('historial');
+        creado: Date.now(), actualizado: Date.now(),
+        creadoPorEmail: AUTH_USER ? AUTH_USER.email : null
+      };
+      btnGuardar.disabled = true;
+      try{
+        await db.collection('registros').doc(id).set(registro);
+        draft = null;
+        toast('Turno guardado correctamente');
+        goto('historial');
+      }catch(e){
+        console.error(e);
+        toast('Error guardando en la nube: '+e.message);
+        btnGuardar.disabled = false;
+      }
     };
   }
   const btnVerHist = document.getElementById('btnVerHistorial');
@@ -759,6 +886,7 @@ function viewLicenciada(){
     ['personal','Personal'],
     ['pacientes','Pacientes'],
     ['catalogo','Catálogo'],
+    ['accesos','Accesos'],
     ['config','Configuración']
   ];
   const subtabs = tabs.map(([k,l])=>`<button class="${licTab===k?'active':''}" data-lic-tab="${k}">${l}</button>`).join('');
@@ -769,6 +897,7 @@ function viewLicenciada(){
   else if(licTab==='personal') body = licPersonal();
   else if(licTab==='pacientes') body = licPacientes();
   else if(licTab==='catalogo') body = licCatalogo();
+  else if(licTab==='accesos') body = licAccesos();
   else if(licTab==='config') body = licConfig();
 
   return `
@@ -951,6 +1080,30 @@ function licPacientes(){
   </div>`;
 }
 
+function licAccesos(){
+  const miEmail = ((AUTH_USER && AUTH_USER.email) || '').toLowerCase();
+  const list = [...AUTHORIZED_EMAILS].sort((a,b)=> (a.addedAt||0)-(b.addedAt||0));
+  const rows = list.map(e=>{
+    const esYo = e.id === miEmail;
+    return `<tr>
+      <td>${escapeHtml(e.id)}${esYo?' <span class="badge-origen">tú</span>':''}</td>
+      <td class="small muted">${e.addedAt ? new Date(e.addedAt).toLocaleDateString('es-PE') : ''}${e.addedBy?(' · agregado por '+escapeHtml(e.addedBy)):''}</td>
+      <td><button class="btn btn-outline btn-sm" data-del-email="${escapeHtml(e.id)}" ${esYo?'disabled title="No puedes quitarte tu propio acceso"':''}>Quitar acceso</button></td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="card">
+    <h2>Correos con acceso a la app</h2>
+    <p class="muted small">Solo quien inicie sesión con Google usando uno de estos correos puede entrar a la app. Agrega aquí el Gmail de cada nueva persona <b>antes</b> de que intente ingresar; si intenta entrar sin estar en la lista, verá un aviso de "Sin acceso".</p>
+    <div class="table-wrap"><table><thead><tr><th>Correo</th><th>Detalle</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="empty-state">Sin correos autorizados.</td></tr>'}</tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Dar acceso a un nuevo correo</h2>
+    <div class="field"><label>Correo de Gmail</label><input id="newEmailAcceso" type="email" placeholder="nombre@gmail.com"></div>
+    <button class="btn" id="btnAddEmailAcceso">+ Dar acceso</button>
+  </div>`;
+}
+
 function licCatalogo(){
   const sections = STATE.catalogo.map(cat=>{
     const rows = cat.actividades.map(a=>{
@@ -1002,7 +1155,7 @@ function licConfig(){
   </div>
   <div class="card">
     <h2>Respaldo de datos</h2>
-    <p class="muted small">Esta app guarda todo en el navegador de este equipo. Usa estas opciones para respaldar, restaurar o consolidar registros hechos en otro dispositivo (por ejemplo, un celular).</p>
+    <p class="muted small">Los datos ya están en la nube (Firestore) y se ven igual desde cualquier celular o computadora autorizado — no dependen del navegador de un solo equipo. Aun así, puedes exportar una copia de seguridad, o importar/consolidar un respaldo JSON antiguo.</p>
     <div class="form-row">
       <button class="btn btn-outline btn-sm" id="btnExportBackup">⬇️ Exportar copia completa (JSON)</button>
       <button class="btn btn-outline btn-sm" id="btnImportBackup">⬆️ Importar / consolidar JSON</button>
@@ -1010,8 +1163,14 @@ function licConfig(){
     </div>
   </div>
   <div class="card">
+    <h2>Cuenta de Google</h2>
+    <p class="muted small">Sesión iniciada como <b>${escapeHtml((AUTH_USER&&AUTH_USER.email)||'')}</b>. Ciérrala solo si vas a probar con otra cuenta de correo en este mismo dispositivo.</p>
+    <button class="btn btn-outline" id="btnSignOutCfg">Cerrar sesión de Google</button>
+  </div>
+  <div class="card">
     <h2 style="color:var(--danger)">Zona de riesgo</h2>
-    <button class="btn btn-danger" id="btnResetAll">Borrar todos los datos de este navegador</button>
+    <p class="muted small">Esto borra los datos compartidos en la nube para <b>todo el equipo</b>, no solo este navegador.</p>
+    <button class="btn btn-danger" id="btnResetAll">Borrar todos los datos (para todo el equipo)</button>
   </div>`;
 }
 
@@ -1063,67 +1222,97 @@ function bindLicenciadaEvents(){
   // Personal
   document.querySelectorAll('[data-toggle-activo]').forEach(el=>{
     el.onchange = ()=>{
-      const p = STATE.personal.find(x=>x.id===el.getAttribute('data-toggle-activo'));
-      p.activo = el.checked; saveState();
+      db.collection('personal').doc(el.getAttribute('data-toggle-activo')).update({activo: el.checked})
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-del-personal]').forEach(el=>{
     el.onclick = ()=>{
       if(!confirm('¿Eliminar este personal? Sus registros históricos se conservarán.')) return;
-      STATE.personal = STATE.personal.filter(p=>p.id!==el.getAttribute('data-del-personal'));
-      saveState(); render();
+      db.collection('personal').doc(el.getAttribute('data-del-personal')).delete()
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   const btnAddPersonal = document.getElementById('btnAddPersonal');
   if(btnAddPersonal){
-    btnAddPersonal.onclick = ()=>{
+    btnAddPersonal.onclick = async ()=>{
       const nombres = document.getElementById('npNombres').value.trim();
       const apellidos = document.getElementById('npApellidos').value.trim();
       const cargo = document.getElementById('npCargo').value.trim();
       if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
-      STATE.personal.push({id: uid('p'), nombres, apellidos, cargo, activo:true});
-      saveState(); render(); toast('Personal agregado');
+      try{
+        await db.collection('personal').doc(uid('p')).set({nombres, apellidos, cargo, activo:true});
+        toast('Personal agregado');
+      }catch(e){ console.error(e); toast('Error: '+e.message); }
     };
   }
 
   // Pacientes
   document.querySelectorAll('[data-edit-cama]').forEach(el=>{
     el.onchange = ()=>{
-      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-edit-cama'));
-      p.cama = el.value.trim(); saveState(); toast('Cama actualizada');
+      db.collection('pacientes').doc(el.getAttribute('data-edit-cama')).update({cama: el.value.trim()})
+        .then(()=>toast('Cama actualizada'))
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-edit-grado]').forEach(el=>{
     el.onchange = ()=>{
-      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-edit-grado'));
-      p.grado = Number(el.value); saveState(); toast('Grado actualizado');
+      db.collection('pacientes').doc(el.getAttribute('data-edit-grado')).update({grado: Number(el.value)})
+        .then(()=>toast('Grado actualizado'))
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-toggle-activo-paciente]').forEach(el=>{
     el.onchange = ()=>{
-      const p = STATE.pacientes.find(x=>x.id===el.getAttribute('data-toggle-activo-paciente'));
-      p.activo = el.checked; saveState();
+      db.collection('pacientes').doc(el.getAttribute('data-toggle-activo-paciente')).update({activo: el.checked})
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-del-paciente]').forEach(el=>{
     el.onclick = ()=>{
       if(!confirm('¿Eliminar este paciente? Los registros históricos que lo mencionan se conservarán.')) return;
-      STATE.pacientes = STATE.pacientes.filter(p=>p.id!==el.getAttribute('data-del-paciente'));
-      saveState(); render();
+      db.collection('pacientes').doc(el.getAttribute('data-del-paciente')).delete()
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   const btnAddPaciente = document.getElementById('btnAddPaciente');
   if(btnAddPaciente){
-    btnAddPaciente.onclick = ()=>{
+    btnAddPaciente.onclick = async ()=>{
       const nombres = document.getElementById('npacNombres').value.trim();
       const apellidos = document.getElementById('npacApellidos').value.trim();
       const cama = document.getElementById('npacCama').value.trim();
       const grado = Number(document.getElementById('npacGrado').value);
       if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
-      STATE.pacientes.push({id: uid('pac'), nombres, apellidos, cama, grado, fechaIngreso:todayISO(), fechaAlta:'', activo:true});
-      saveState(); render(); toast('Paciente registrado');
+      try{
+        await db.collection('pacientes').doc(uid('pac')).set({nombres, apellidos, cama, grado, fechaIngreso:todayISO(), fechaAlta:'', activo:true});
+        toast('Paciente registrado');
+      }catch(e){ console.error(e); toast('Error: '+e.message); }
     };
   }
+
+  // Accesos (correos autorizados)
+  const btnAddEmail = document.getElementById('btnAddEmailAcceso');
+  if(btnAddEmail){
+    btnAddEmail.onclick = async ()=>{
+      const raw = document.getElementById('newEmailAcceso').value.trim().toLowerCase();
+      if(!raw || !raw.includes('@')){ toast('Escribe un correo válido'); return; }
+      try{
+        await db.collection('authorized_emails').doc(raw).set({
+          addedAt: Date.now(), addedBy: (AUTH_USER && AUTH_USER.email) || '?'
+        });
+        toast('Acceso otorgado a '+raw);
+      }catch(e){ console.error(e); toast('Error: '+e.message); }
+    };
+  }
+  document.querySelectorAll('[data-del-email]').forEach(el=>{
+    el.onclick = ()=>{
+      const email = el.getAttribute('data-del-email');
+      if(!confirm('¿Quitar el acceso de '+email+'?')) return;
+      db.collection('authorized_emails').doc(email).delete()
+        .then(()=>toast('Acceso retirado'))
+        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
+    };
+  });
 
   // Catalogo
   document.querySelectorAll('[data-act][data-grado]').forEach(el=>{
@@ -1136,7 +1325,7 @@ function bindLicenciadaEvents(){
       const val = el.value==='' ? null : Number(el.value);
       if(grado==='fijo'){ act.tiempoFijo = val; }
       else { act.tiempos[grado] = val; }
-      saveState(); toast('Tiempo actualizado');
+      saveCatalogo(); toast('Tiempo actualizado');
     };
   });
   document.querySelectorAll('[data-del-act]').forEach(el=>{
@@ -1145,7 +1334,7 @@ function bindLicenciadaEvents(){
       const [catId, actId] = el.getAttribute('data-del-act').split('|');
       const cat = STATE.catalogo.find(c=>c.id===catId);
       cat.actividades = cat.actividades.filter(a=>a.id!==actId);
-      saveState(); render();
+      saveCatalogo(); render();
     };
   });
   document.querySelectorAll('[data-add-act]').forEach(el=>{
@@ -1162,7 +1351,7 @@ function bindLicenciadaEvents(){
       } else {
         cat.actividades.push({id:newId, nombre, origen:'personalizado', gradoDependiente:false, tiempoFijo:min});
       }
-      saveState(); render(); toast('Actividad agregada al catálogo');
+      saveCatalogo(); render(); toast('Actividad agregada al catálogo');
     };
   });
 
@@ -1173,7 +1362,7 @@ function bindLicenciadaEvents(){
       STATE.config.horasTurnoGD = Number(document.getElementById('cfgGD').value)||12;
       STATE.config.horasTurnoGN = Number(document.getElementById('cfgGN').value)||12;
       STATE.config.margenAlerta = Math.min(100,Math.max(1,Number(document.getElementById('cfgMargen').value)||90))/100;
-      saveState(); toast('Configuración guardada');
+      saveConfig(); toast('Configuración guardada');
     };
   }
   const btnExportBackup = document.getElementById('btnExportBackup');
@@ -1190,48 +1379,89 @@ function bindLicenciadaEvents(){
       const file = e.target.files[0];
       if(!file) return;
       const reader = new FileReader();
-      reader.onload = (ev)=>{
+      reader.onload = async (ev)=>{
         try{
           const incoming = JSON.parse(ev.target.result);
-          mergeState(incoming);
-          saveState(); render();
-          toast('Datos consolidados correctamente');
+          const n = await mergeIntoFirestore(incoming);
+          toast(n>0 ? ('Datos consolidados: '+n+' registro(s) nuevo(s)') : 'No había nada nuevo que consolidar');
         }catch(err){
-          alert('El archivo no es un respaldo válido.');
+          console.error(err);
+          alert('El archivo no es un respaldo válido, o hubo un error subiéndolo a la nube.');
         }
       };
       reader.readAsText(file);
       fileImport.value = '';
     };
   }
+  const btnSignOutCfg = document.getElementById('btnSignOutCfg');
+  if(btnSignOutCfg) btnSignOutCfg.onclick = ()=>{ SESSION=null; auth.signOut(); };
   const btnResetAll = document.getElementById('btnResetAll');
   if(btnResetAll){
-    btnResetAll.onclick = ()=>{
-      if(!confirm('Esto borrará TODOS los registros, personal y catálogo de este navegador. ¿Continuar?')) return;
+    btnResetAll.onclick = async ()=>{
+      if(!confirm('Esto borrará TODOS los registros, personal, pacientes y catálogo. Como los datos están en la nube, esto afecta a TODO el equipo, no solo a este navegador. ¿Continuar?')) return;
       if(!confirm('Confirma nuevamente: esta acción no se puede deshacer.')) return;
-      localStorage.removeItem(STORAGE_KEY);
-      STATE = defaultState();
-      saveState();
-      SESSION = null;
-      goto('login');
+      btnResetAll.disabled = true;
+      try{
+        await wipeFirestoreData();
+        toast('Datos borrados');
+        SESSION = null;
+        goto('login');
+      }catch(e){
+        console.error(e);
+        alert('Error borrando datos: '+e.message);
+      }
+      btnResetAll.disabled = false;
     };
   }
 }
 
-function mergeState(incoming){
-  // Merge registros por id (evita duplicados), merge personal y pacientes por id.
+// Sube al Firestore compartido los registros/personal/pacientes de un
+// respaldo JSON que no existan todavía (comparando por id), para
+// consolidar lo que alguien haya exportado desde otro dispositivo.
+async function mergeIntoFirestore(incoming){
+  const batch = db.batch();
+  let count = 0;
   if(Array.isArray(incoming.registros)){
     const existingIds = new Set(STATE.registros.map(r=>r.id));
-    incoming.registros.forEach(r=>{ if(!existingIds.has(r.id)) STATE.registros.push(r); });
+    incoming.registros.forEach(r=>{
+      if(!existingIds.has(r.id)){ const {id, ...rest} = r; batch.set(db.collection('registros').doc(r.id), rest); count++; }
+    });
   }
   if(Array.isArray(incoming.personal)){
     const existingIds = new Set(STATE.personal.map(p=>p.id));
-    incoming.personal.forEach(p=>{ if(!existingIds.has(p.id)) STATE.personal.push(p); });
+    incoming.personal.forEach(p=>{
+      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(db.collection('personal').doc(p.id), rest); count++; }
+    });
   }
   if(Array.isArray(incoming.pacientes)){
     const existingIds = new Set(STATE.pacientes.map(p=>p.id));
-    incoming.pacientes.forEach(p=>{ if(!existingIds.has(p.id)) STATE.pacientes.push(p); });
+    incoming.pacientes.forEach(p=>{
+      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(db.collection('pacientes').doc(p.id), rest); count++; }
+    });
   }
+  if(count>0) await batch.commit();
+  return count;
+}
+
+// Borra todo el contenido compartido en Firestore (registros/personal/
+// pacientes) y reinicia catálogo y configuración a los valores por
+// defecto. No toca authorized_emails (el control de acceso no se borra).
+async function wipeFirestoreData(){
+  async function wipeCollection(name){
+    const snap = await db.collection(name).get();
+    const docs = snap.docs;
+    for(let i=0;i<docs.length;i+=450){
+      const batch = db.batch();
+      docs.slice(i,i+450).forEach(d=>batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await wipeCollection('registros');
+  await wipeCollection('personal');
+  await wipeCollection('pacientes');
+  await db.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+  await db.collection('meta').doc('config').set(defaultConfig());
+  await seedFirestoreIfEmpty();
 }
 
 /* ------------------------------ Exportar CSV ------------------------------ */
@@ -1257,8 +1487,38 @@ function exportCsvResumen(){
 }
 
 /* -------------------------------- Init -------------------------------- */
-loadState();
-goto('login');
+render(); // pantalla de "Cargando…" mientras se resuelve la sesión de Google
+
+auth.onAuthStateChanged(async (user)=>{
+  AUTH_USER = user;
+  if(!user){
+    AUTH_STATE = 'signedout';
+    AUTHORIZED_EMAILS = [];
+    detachFirestoreListeners();
+    SESSION = null;
+    render();
+    return;
+  }
+  AUTH_STATE = 'checking';
+  render();
+  try{
+    const email = (user.email||'').toLowerCase();
+    const doc = await db.collection('authorized_emails').doc(email).get();
+    if(doc.exists){
+      AUTH_STATE = 'ready';
+      await seedFirestoreIfEmpty();
+      attachFirestoreListeners();
+      goto('login');
+    } else {
+      AUTH_STATE = 'unauthorized';
+      render();
+    }
+  }catch(e){
+    console.error('Error verificando acceso', e);
+    AUTH_STATE = 'unauthorized';
+    render();
+  }
+});
 
 </script>
 </body>
