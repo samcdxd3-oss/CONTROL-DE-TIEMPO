@@ -201,8 +201,16 @@ const db = firebase.firestore();
 
 let AUTH_USER = null;         // usuario de Google actual (objeto de Firebase Auth) o null
 let AUTH_STATE = 'checking';  // 'checking' | 'signedout' | 'unauthorized' | 'ready'
-let AUTHORIZED_EMAILS = [];   // [{id:email, addedAt, addedBy}, ...] — lista blanca de accesos
+let AUTHORIZED_EMAILS = [];   // [{id:email, addedAt, addedBy}, ...] — lista blanca de accesos (Licenciada/reportes)
 let firestoreUnsubs = [];     // des-suscriptores de los listeners en vivo de Firestore
+
+/* Hay DOS tipos de acceso, independientes entre sí:
+   1) authorized_emails — acceso completo (Panel Licenciada, ver a todos,
+      Resumen/reportes). Se administra en la pestaña "Accesos".
+   2) personal_emails — acceso directo de UNA persona del staff: su correo
+      de Google la lleva automáticamente a SU propia sección para registrar
+      SUS actividades, sin lista de selección y sin ver los datos de nadie
+      más ni el Panel Licenciada. Se administra en la pestaña "Personal". */
 
 /* ---------------------------- Utilidades ---------------------------- */
 function uid(prefix){ return (prefix||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
@@ -358,6 +366,41 @@ function attachFirestoreListeners(){
   }, e=>console.error('listener authorized_emails', e)));
 }
 
+// Listeners RESTRINGIDOS para un acceso directo de personal (correo
+// vinculado a UNA sola persona, ver personal_emails). A diferencia de
+// attachFirestoreListeners(), esto solo trae lo mínimo necesario para que
+// esa persona registre sus propias actividades: su propio documento de
+// "personal" (no toda la lista), el catálogo y la configuración, los
+// pacientes (para poder elegir a quién se le hizo la actividad), y SOLO
+// sus propios registros (filtrados en el servidor con .where, no en el
+// navegador) — así, aunque alguien mire el tráfico de red, nunca llegan a
+// su dispositivo los datos de otras personas. No se escucha
+// authorized_emails ni el resto de "personal": las reglas de seguridad de
+// Firestore tampoco se lo permitirían a este tipo de acceso.
+function attachFirestoreListenersPersonal(personalId){
+  detachFirestoreListeners();
+  firestoreUnsubs.push(db.collection('personal').doc(personalId).onSnapshot(doc=>{
+    STATE.personal = doc.exists ? [{ id:doc.id, ...doc.data() }] : [];
+    render();
+  }, e=>console.error('listener personal (acceso directo)', e)));
+  firestoreUnsubs.push(db.collection('pacientes').onSnapshot(snap=>{
+    STATE.pacientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener pacientes (acceso directo)', e)));
+  firestoreUnsubs.push(db.collection('registros').where('personalId','==',personalId).onSnapshot(snap=>{
+    STATE.registros = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    render();
+  }, e=>console.error('listener registros (acceso directo)', e)));
+  firestoreUnsubs.push(db.collection('meta').doc('catalogo').onSnapshot(doc=>{
+    if(doc.exists) STATE.catalogo = doc.data().categorias || [];
+    render();
+  }, e=>console.error('listener catalogo (acceso directo)', e)));
+  firestoreUnsubs.push(db.collection('meta').doc('config').onSnapshot(doc=>{
+    if(doc.exists) STATE.config = doc.data();
+    render();
+  }, e=>console.error('listener config (acceso directo)', e)));
+}
+
 function pacientesActivos(){
   return STATE.pacientes.filter(p=>p.activo);
 }
@@ -402,7 +445,16 @@ function updateTopbar(){
 }
 
 document.getElementById('btnLogout').addEventListener('click', ()=>{
+  if(SESSION && SESSION.restringido){
+    // Acceso directo de personal: su cuenta de Google ES su identidad, no
+    // hay "lista para elegir otro nombre" a la que volver — Salir cierra
+    // sesión de Google del todo, para que otra persona pueda entrar con la suya.
+    auth.signOut();
+    return;
+  }
   SESSION = null;
+  draft = null;
+  draftEditId = null;
   goto('login');
 });
 
@@ -490,6 +542,7 @@ function viewLogin(){
 
 /* ============================ REGISTRO ================================ */
 let draft = null; // { fecha, turno, items:[] }
+let draftEditId = null; // si no es null, guardar el turno actualiza ESE registro en vez de crear uno nuevo
 
 function ensureDraft(){
   if(!draft){
@@ -507,6 +560,22 @@ function ensureDraft(){
 
 function draftTotal(){
   return draft.items.reduce((s,i)=>s+i.subtotal,0);
+}
+
+// Carga un registro ya guardado en el borrador para corregirlo (por si el
+// personal se confundió al registrar). Al guardar, se actualiza ESE mismo
+// registro en Firestore en vez de crear uno nuevo.
+function iniciarEdicionRegistro(regId){
+  const r = STATE.registros.find(x=>x.id===regId);
+  if(!r) return;
+  draft = { fecha: r.fecha, turno: r.turno, items: r.items.map(it=>({...it})) };
+  draftEditId = r.id;
+  goto('registro');
+}
+function cancelarEdicionRegistro(){
+  draft = null;
+  draftEditId = null;
+  goto('historial');
 }
 
 function viewRegistro(){
@@ -531,6 +600,11 @@ function viewRegistro(){
   `).join('') : `<div class="empty-state"><div class="ico">📋</div>Aún no agregas actividades.<br>Toca "+ Agregar actividad" para empezar.</div>`;
 
   return `
+  ${draftEditId ? `
+  <div class="card" style="background:var(--primary-light);">
+    <b>✏️ Editando un registro ya guardado</b> — al tocar "Guardar" se actualizará ese registro (no se creará uno nuevo).
+    <button class="link-btn" id="btnCancelarEdicion">Cancelar edición</button>
+  </div>` : ''}
   <div class="card">
     <div class="row">
       <h2>Turno de ${escapeHtml(p ? p.nombres : '')}</h2>
@@ -587,13 +661,15 @@ function viewHistorial(){
       <td>${r.turno==='GD'?'Diurno':'Nocturno'}</td>
       <td>${minToHM(r.totalMin)}</td>
       <td><span class="chip ${chip}">${Math.round(pct*100)}%</span></td>
+      <td><button class="btn btn-outline btn-sm" data-editar-registro="${r.id}">✏️ Editar</button></td>
     </tr>`;
   }).join('');
   return `
   <div class="card">
     <button class="link-btn" id="btnBackRegistro">← Volver al registro actual</button>
     <h2>Mis registros — ${escapeHtml(p?p.nombres+' '+p.apellidos:'')}</h2>
-    ${mine.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Turno</th><th>Total</th><th>%</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    <p class="muted small">Toca una fila para ver el detalle de actividades. Si te confundiste al registrar algo, usa "Editar" para corregir ese turno.</p>
+    ${mine.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Turno</th><th>Total</th><th>%</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : `<div class="empty-state"><div class="ico">🗂️</div>Todavía no tienes turnos guardados.</div>`}
   </div>
   <div id="registroDetalle"></div>
@@ -792,6 +868,7 @@ function bindViewEvents(){
       if(p){
         SESSION = { tipo:'enfermero', personalId:p.id };
         draft = null;
+        draftEditId = null;
         goto('registro');
       } else {
         toast('Selecciona tu nombre de la lista');
@@ -820,19 +897,24 @@ function bindViewEvents(){
     btnGuardar.onclick = async ()=>{
       if(draft.items.length===0){ toast('Agrega al menos una actividad'); return; }
       const p = STATE.personal.find(x=>x.id===SESSION.personalId);
-      const id = uid('reg');
+      const editando = !!draftEditId;
+      const id = editando ? draftEditId : uid('reg');
+      const original = editando ? STATE.registros.find(x=>x.id===draftEditId) : null;
       const registro = {
         personalId: p.id, personalNombre: p.nombres+' '+p.apellidos,
         fecha: draft.fecha, turno: draft.turno,
         items: draft.items, totalMin: draftTotal(),
-        creado: Date.now(), actualizado: Date.now(),
-        creadoPorEmail: AUTH_USER ? AUTH_USER.email : null
+        creado: original ? (original.creado||Date.now()) : Date.now(),
+        actualizado: Date.now(),
+        creadoPorEmail: original ? (original.creadoPorEmail||null) : (AUTH_USER ? AUTH_USER.email : null),
+        editadoPorEmail: editando ? (AUTH_USER ? AUTH_USER.email : null) : (original ? (original.editadoPorEmail||null) : null)
       };
       btnGuardar.disabled = true;
       try{
         await db.collection('registros').doc(id).set(registro);
         draft = null;
-        toast('Turno guardado correctamente');
+        draftEditId = null;
+        toast(editando ? 'Registro actualizado correctamente' : 'Turno guardado correctamente');
         goto('historial');
       }catch(e){
         console.error(e);
@@ -841,6 +923,8 @@ function bindViewEvents(){
       }
     };
   }
+  const btnCancelarEdicion = document.getElementById('btnCancelarEdicion');
+  if(btnCancelarEdicion) btnCancelarEdicion.onclick = cancelarEdicionRegistro;
   const btnVerHist = document.getElementById('btnVerHistorial');
   if(btnVerHist) btnVerHist.onclick = ()=> goto('historial');
   const btnBackReg = document.getElementById('btnBackRegistro');
@@ -851,6 +935,12 @@ function bindViewEvents(){
       const id = el.getAttribute('data-view-registro');
       const r = STATE.registros.find(x=>x.id===id);
       showRegistroDetalle(r.items, 'registroDetalle', r.personalNombre+' — '+fmtFechaLarga(r.fecha)+' ('+(r.turno==='GD'?'Diurno':'Nocturno')+')');
+    };
+  });
+  document.querySelectorAll('[data-editar-registro]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      iniciarEdicionRegistro(el.getAttribute('data-editar-registro'));
     };
   });
 
@@ -1125,12 +1215,16 @@ function licPersonal(){
       <td>${escapeHtml(p.apellidos)}</td>
       <td>${escapeHtml(p.cargo||'')}</td>
       <td><input type="checkbox" data-toggle-activo="${p.id}" ${p.activo?'checked':''}></td>
+      <td>${p.email
+          ? `<span class="small">${escapeHtml(p.email)}</span><br><button class="btn btn-outline btn-sm" data-quitar-acceso-personal="${p.id}">Quitar acceso</button>`
+          : `<div class="form-row"><input type="email" placeholder="correo@gmail.com" id="emailAcceso_${p.id}" style="width:160px;"><button class="btn btn-outline btn-sm" data-dar-acceso-personal="${p.id}">Dar acceso</button></div>`}</td>
       <td><button class="btn btn-outline btn-sm" data-del-personal="${p.id}">Eliminar</button></td>
     </tr>`).join('');
   return `
   <div class="card">
     <h2>Personal registrado</h2>
-    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cargo</th><th>Activo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="muted small">La columna <b>Acceso directo</b> es opcional y es un tipo de acceso distinto al de la pestaña "Accesos": si le asignas un correo de Gmail a alguien aquí, esa persona entra con SU cuenta de Google directo a registrar SU propio turno — sin lista para elegir nombre, y sin ver el Resumen, los reportes ni el Panel Licenciada. El acceso de la pestaña "Accesos" sigue siendo aparte, para quien sí necesita ver todo (Licenciada / supervisión).</p>
+    <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cargo</th><th>Activo</th><th>Acceso directo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
   </div>
   <div class="card">
     <h2>Agregar personal</h2>
@@ -1141,6 +1235,29 @@ function licPersonal(){
     </div>
     <button class="btn" id="btnAddPersonal">+ Agregar</button>
   </div>`;
+}
+
+// Asigna, cambia o quita el correo de "acceso directo" de una persona del
+// staff. Mantiene sincronizada la colección personal_emails/{correo} ->
+// {personalId}, que es la que usan las reglas de seguridad de Firestore
+// para saber a quién pertenece ese correo (ver README).
+async function setPersonalEmail(personalId, emailRaw){
+  const p = STATE.personal.find(x=>x.id===personalId);
+  if(!p) return;
+  const email = (emailRaw||'').trim().toLowerCase();
+  if(email && !email.includes('@')){ toast('Escribe un correo válido'); return; }
+  const oldEmail = (p.email||'').toLowerCase();
+  try{
+    const batch = db.batch();
+    if(oldEmail && oldEmail!==email) batch.delete(db.collection('personal_emails').doc(oldEmail));
+    if(email) batch.set(db.collection('personal_emails').doc(email), {
+      personalId, personalNombre: p.nombres+' '+p.apellidos,
+      addedAt: Date.now(), addedBy: (AUTH_USER && AUTH_USER.email) || '?'
+    });
+    batch.update(db.collection('personal').doc(personalId), { email: email || null });
+    await batch.commit();
+    toast(email ? ('Acceso directo asignado a '+email) : 'Acceso directo retirado');
+  }catch(e){ console.error(e); toast('Error: '+e.message); }
 }
 
 function licPacientes(){
@@ -1330,8 +1447,12 @@ function bindLicenciadaEvents(){
   document.querySelectorAll('[data-del-personal]').forEach(el=>{
     el.onclick = ()=>{
       if(!confirm('¿Eliminar este personal? Sus registros históricos se conservarán.')) return;
-      db.collection('personal').doc(el.getAttribute('data-del-personal')).delete()
-        .catch(e=>{ console.error(e); toast('Error: '+e.message); });
+      const pid = el.getAttribute('data-del-personal');
+      const p = STATE.personal.find(x=>x.id===pid);
+      const batch = db.batch();
+      batch.delete(db.collection('personal').doc(pid));
+      if(p && p.email) batch.delete(db.collection('personal_emails').doc(p.email.toLowerCase()));
+      batch.commit().catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   const btnAddPersonal = document.getElementById('btnAddPersonal');
@@ -1347,6 +1468,20 @@ function bindLicenciadaEvents(){
       }catch(e){ console.error(e); toast('Error: '+e.message); }
     };
   }
+  document.querySelectorAll('[data-dar-acceso-personal]').forEach(el=>{
+    el.onclick = ()=>{
+      const pid = el.getAttribute('data-dar-acceso-personal');
+      const input = document.getElementById('emailAcceso_'+pid);
+      setPersonalEmail(pid, input ? input.value : '');
+    };
+  });
+  document.querySelectorAll('[data-quitar-acceso-personal]').forEach(el=>{
+    el.onclick = ()=>{
+      const pid = el.getAttribute('data-quitar-acceso-personal');
+      if(!confirm('¿Quitar el acceso directo de esta persona? Ya no podrá entrar con su correo (se le puede volver a asignar cuando quieran).')) return;
+      setPersonalEmail(pid, '');
+    };
+  });
 
   // Pacientes
   document.querySelectorAll('[data-edit-cama]').forEach(el=>{
@@ -1559,6 +1694,7 @@ async function wipeFirestoreData(){
   }
   await wipeCollection('registros');
   await wipeCollection('personal');
+  await wipeCollection('personal_emails'); // los accesos directos apuntaban a personal que ya no existe
   await wipeCollection('pacientes');
   await db.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
   await db.collection('meta').doc('config').set(defaultConfig());
@@ -1677,10 +1813,23 @@ auth.onAuthStateChanged(async (user)=>{
       await seedFirestoreIfEmpty();
       attachFirestoreListeners();
       goto('login');
-    } else {
-      AUTH_STATE = 'unauthorized';
-      render();
+      return;
     }
+    // No tiene el acceso "completo" (Licenciada/reportes). ¿Es un acceso
+    // directo de personal (correo vinculado a una sola persona)?
+    const mapDoc = await db.collection('personal_emails').doc(email).get();
+    if(mapDoc.exists){
+      const { personalId } = mapDoc.data();
+      AUTH_STATE = 'ready';
+      SESSION = { tipo:'enfermero', personalId, restringido:true };
+      draft = null;
+      draftEditId = null;
+      attachFirestoreListenersPersonal(personalId);
+      goto('registro');
+      return;
+    }
+    AUTH_STATE = 'unauthorized';
+    render();
   }catch(e){
     console.error('Error verificando acceso', e);
     AUTH_STATE = 'unauthorized';
