@@ -556,10 +556,14 @@ function viewHistorial(){
 
 /* --------------------------- Modal: agregar actividad --------------------------- */
 // modalState.step: 'actividad' | 'paciente' | 'cantidad'
-let modalState = { open:false, step:'actividad', categoriaId:null, query:'', actividad:null, pacienteId:undefined, cantidad:1 };
+// El grado (1/2/3) se elige de forma independiente al paciente -- igual que
+// en el Excel original, donde el grado era un dato de la actividad (cuántos
+// pacientes de ese grado la recibieron), y el paciente era solo un registro
+// aparte (nombre/cama/fechas) sin grado asociado.
+let modalState = { open:false, step:'actividad', categoriaId:null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
 
 function openAddModal(){
-  modalState = { open:true, step:'actividad', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, pacienteId:undefined, cantidad:1 };
+  modalState = { open:true, step:'actividad', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
   renderModal();
 }
 function closeModal(){
@@ -582,8 +586,17 @@ function renderModal(){
     } else {
       acts = acts.filter(a=>a.categoriaId===modalState.categoriaId);
     }
+    const gradoBtns = `
+      <div class="field">
+        <label>Grado del paciente para esta actividad</label>
+        <div class="grado-btns">
+          <button class="${modalState.grado==='grado1'?'sel':''}" data-pick-grado="grado1">Grado 1</button>
+          <button class="${modalState.grado==='grado2'?'sel':''}" data-pick-grado="grado2">Grado 2</button>
+          <button class="${modalState.grado==='grado3'?'sel':''}" data-pick-grado="grado3">Grado 3</button>
+        </div>
+      </div>`;
     const list = acts.map(a=>{
-      const timeLabel = a.gradoDependiente ? 'Según grado del paciente' : (a.tiempoFijo+' min estándar');
+      const timeLabel = a.gradoDependiente ? ('Según grado seleccionado ('+a.tiempos[modalState.grado]+' min)') : (a.tiempoFijo+' min estándar');
       return `<div class="act-item clickable" data-pick-act="${a.id}" data-pick-cat="${a.categoriaId}">
         <div><div class="an">${escapeHtml(a.nombre)}</div><div class="at">${escapeHtml(timeLabel)}</div></div>
         <div class="muted">›</div>
@@ -594,6 +607,7 @@ function renderModal(){
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-head"><h3>Agregar actividad</h3><button class="close-x" id="modalClose">×</button></div>
+        ${gradoBtns}
         <input class="search-box" id="modalSearch" placeholder="Buscar actividad..." value="${escapeHtml(modalState.query)}">
         ${modalState.query.trim() ? '' : `<div class="chipbar">${chipbar}</div>`}
         <div class="act-list">${list}</div>
@@ -602,48 +616,35 @@ function renderModal(){
   } else if(modalState.step === 'paciente'){
     const a = modalState.actividad;
     const activos = pacientesActivos();
-    const obligatorio = a.gradoDependiente;
-    if(activos.length===0 && obligatorio){
-      root.innerHTML = `
-      <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-          <div class="modal-head"><h3>Falta registrar pacientes</h3><button class="close-x" id="modalClose">×</button></div>
-          <p class="muted">"${escapeHtml(a.nombre)}" depende del grado del paciente, pero todavía no hay pacientes activos registrados.</p>
-          <p class="muted small">Pide a la Licenciada que los registre en el Panel Licenciada → Pacientes.</p>
-          <button class="btn btn-outline btn-block" id="btnBackToList">← Elegir otra actividad</button>
-        </div>
+    const list = activos.map(p=>`
+      <div class="act-item clickable" data-pick-paciente="${p.id}">
+        <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)):''}</div></div>
+        <div class="muted">›</div>
+      </div>`).join('');
+    const sinPacienteOpt = `<div class="act-item clickable" data-pick-paciente="">
+        <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente en particular</div></div>
+        <div class="muted">›</div>
       </div>`;
-    } else {
-      const list = activos.map(p=>`
-        <div class="act-item clickable" data-pick-paciente="${p.id}">
-          <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)+' · '):''}Grado ${p.grado}</div></div>
-          <div class="muted">›</div>
-        </div>`).join('');
-      const sinPacienteOpt = obligatorio ? '' : `<div class="act-item clickable" data-pick-paciente="">
-          <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente</div></div>
-          <div class="muted">›</div>
-        </div>`;
-      root.innerHTML = `
-      <div class="modal-overlay" id="modalOverlay">
-        <div class="modal">
-          <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
-          <p class="muted small">${obligatorio ? 'Selecciona el paciente (el tiempo depende de su grado):' : '¿Para qué paciente fue? (opcional)'}</p>
-          <div class="act-list">${sinPacienteOpt}${list}</div>
-          <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnBackToList">← Elegir otra actividad</button>
-        </div>
-      </div>`;
-    }
+    root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
+        <p class="muted small">¿A qué paciente se la hiciste? (opcional, solo para el registro — el tiempo ya quedó fijado según el grado que elegiste)</p>
+        <div class="act-list">${sinPacienteOpt}${list}</div>
+        <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnBackToList">← Elegir otra actividad</button>
+      </div>
+    </div>`;
   } else if(modalState.step === 'cantidad'){
     const a = modalState.actividad;
     const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
-    const tiempoUnit = a.gradoDependiente ? (paciente ? a.tiempos['grado'+paciente.grado] : null) : a.tiempoFijo;
+    const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
     const subtotal = tiempoUnit!=null ? tiempoUnit*modalState.cantidad : null;
 
     root.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
-        <p class="muted small">${escapeHtml(a.categoriaNombre)}${paciente ? ' · 🧑‍🦱 '+escapeHtml(paciente.nombres+' '+paciente.apellidos)+' (Grado '+paciente.grado+')' : ' · Sin paciente / general'}</p>
+        <p class="muted small">${escapeHtml(a.categoriaNombre)}${a.gradoDependiente ? ' · Grado '+modalState.grado.replace('grado','') : ''}${paciente ? ' · 🧑‍🦱 '+escapeHtml(paciente.nombres+' '+paciente.apellidos) : ' · Sin paciente / general'}</p>
         <p>Tiempo estándar: <b>${tiempoUnit!=null?tiempoUnit+' min':'—'}</b></p>
         <div class="field" style="margin-top:12px;">
           <label>Cantidad de veces realizada</label>
@@ -675,6 +676,9 @@ function renderModal(){
   }
   document.querySelectorAll('[data-cat]').forEach(el=>{
     el.onclick = ()=>{ modalState.categoriaId = el.getAttribute('data-cat'); renderModal(); };
+  });
+  document.querySelectorAll('[data-pick-grado]').forEach(el=>{
+    el.onclick = ()=>{ modalState.grado = el.getAttribute('data-pick-grado'); renderModal(); };
   });
   document.querySelectorAll('[data-pick-act]').forEach(el=>{
     el.onclick = ()=>{
@@ -712,13 +716,13 @@ function renderModal(){
     confirmBtn.onclick = ()=>{
       const a = modalState.actividad;
       const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
-      const tiempoUnit = a.gradoDependiente ? a.tiempos['grado'+paciente.grado] : a.tiempoFijo;
+      const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
       if(tiempoUnit==null){ toast('No se pudo calcular el tiempo para esta combinación'); return; }
       draft.items.push({
         id: uid('it'),
         categoriaId: a.categoriaId, categoriaNombre: a.categoriaNombre,
         actividadId: a.id, actividadNombre: a.nombre,
-        grado: a.gradoDependiente ? ('grado'+paciente.grado) : null,
+        grado: a.gradoDependiente ? modalState.grado : null,
         pacienteId: paciente ? paciente.id : null,
         pacienteNombre: paciente ? (paciente.nombres+' '+paciente.apellidos) : null,
         cantidad: modalState.cantidad, tiempoUnit: tiempoUnit,
@@ -1063,7 +1067,7 @@ function licPacientes(){
   return `
   <div class="card">
     <h2>Pacientes hospitalizados</h2>
-    <p class="muted small">El grado de dependencia se usa para calcular automáticamente el tiempo de las actividades que dependen del grado del paciente. Actualízalo cuando cambie la clasificación del paciente.</p>
+    <p class="muted small">El grado que se registra aquí es solo referencial (la clasificación del paciente). Al registrar una actividad, el personal elige el grado (1/2/3) de forma independiente, directamente en el paso "Agregar actividad" — así, aunque este dato no esté actualizado al minuto, no afecta el cálculo del tiempo.</p>
     <div class="table-wrap"><table><thead><tr><th>Nombres</th><th>Apellidos</th><th>Cama</th><th>Grado</th><th>Activo</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="6" class="empty-state">Sin pacientes registrados.</td></tr>`}</tbody></table></div>
   </div>
   <div class="card">
