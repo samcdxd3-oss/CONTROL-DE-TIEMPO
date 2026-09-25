@@ -140,9 +140,13 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 .barchart{display:flex; flex-direction:column; gap:10px; margin-top:6px;}
 .barchart .bar-row{display:flex; align-items:center; gap:10px;}
 .barchart .bar-name{width:150px; flex-shrink:0; font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.barchart .bar-track{flex:1; background:#eef1f4; border-radius:6px; height:18px; overflow:hidden;}
-.barchart .bar-fill{height:100%; background:var(--primary); border-radius:6px;}
+.barchart .bar-track{position:relative; flex:1; background:#eef1f4; border-radius:6px; height:18px; overflow:hidden;}
+.barchart .bar-fill-wrap{display:flex; height:100%; width:100%;}
+.barchart .bar-fill{height:100%; background:var(--primary);}
+.barchart .bar-fill-exceso{height:100%; background:var(--danger);}
+.barchart .bar-meta-line{position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--text); opacity:.5; z-index:2;}
 .barchart .bar-value{width:64px; text-align:right; font-size:12.5px; font-weight:700; flex-shrink:0;}
+.barchart .bar-value.bar-value-exceso{color:var(--danger);}
 @media(max-width:520px){.barchart .bar-name{width:88px; font-size:11.5px;}}
 
 </style>
@@ -1023,6 +1027,7 @@ function viewLicenciada(){
   const tabs = [
     ['resumen','Resumen por turno'],
     ['actividad','Por actividad'],
+    ['reportes','Reportes'],
     ['personal','Personal'],
     ['pacientes','Pacientes'],
     ['catalogo','Catálogo'],
@@ -1034,6 +1039,7 @@ function viewLicenciada(){
   let body = '';
   if(licTab==='resumen') body = licResumen();
   else if(licTab==='actividad') body = licPorActividad();
+  else if(licTab==='reportes') body = licReportes();
   else if(licTab==='personal') body = licPersonal();
   else if(licTab==='pacientes') body = licPacientes();
   else if(licTab==='catalogo') body = licCatalogo();
@@ -1067,11 +1073,15 @@ function licFiltrosHtml(){
   </div>`;
 }
 
-function licResumen(){
-  const groups = buildResumenGroups();
+// Calcula, a partir de los grupos (personal+fecha+turno), los datos que
+// alimentan tanto las tarjetas de Resumen como la Vista previa de Reportes:
+// cada grupo "enriquecido" con su % contra el estándar y su estado/color,
+// más los totales acumulados (GD, GN, exceso). Se extrajo aparte para que
+// Resumen y Reportes muestren siempre los mismos números, sin duplicar la
+// lógica en dos lugares que se puedan desincronizar.
+function resumenStats(groups){
   const margen = STATE.config.margenAlerta || 0.9;
   let excesoTurnos=0, excesoMinTotal=0, deficitFuerte=0, totalMinGD=0, totalMinGN=0;
-
   const enriched = groups.map(g=>{
     const horasEstandar = g.turno==='GN' ? (STATE.config.horasTurnoGN||12) : (STATE.config.horasTurnoGD||12);
     const estandarMin = horasEstandar*60;
@@ -1083,6 +1093,12 @@ function licResumen(){
     if(g.turno==='GN') totalMinGN += g.totalMin; else totalMinGD += g.totalMin;
     return Object.assign({}, g, { horasEstandar, pct, chip, estado });
   });
+  return { enriched, excesoTurnos, excesoMinTotal, deficitFuerte, totalMinGD, totalMinGN };
+}
+
+function licResumen(){
+  const groups = buildResumenGroups();
+  const { enriched, excesoTurnos, excesoMinTotal, totalMinGD, totalMinGN } = resumenStats(groups);
 
   // Se agrupa primero por PERSONA (no por turno suelto): así, si un
   // enfermero/a guarda su turno en varios momentos separados, o trabaja
@@ -1161,22 +1177,44 @@ function licGraficoHorasPorEnfermero(groups){
   });
   const arr = Object.values(porPersona).sort((a,b)=> b.totalMin - a.totalMin);
   if(arr.length===0) return '';
-  const max = Math.max(...arr.map(x=>x.totalMin), 1);
-  const rows = arr.map(x=>`
+  // Meta = un turno estándar (12h por defecto, configurable). No es un
+  // porcentaje por turno individual -- es una sola línea de referencia
+  // sobre el TOTAL acumulado de cada persona en el periodo filtrado: lo
+  // que cae antes de la línea se pinta normal, y lo que se pasa de ahí se
+  // pinta en rojo, para verlo de un vistazo sin tener que leer porcentajes.
+  const metaMin = Math.max(STATE.config.horasTurnoGD||12, STATE.config.horasTurnoGN||12) * 60;
+  const scaleMax = Math.max(...arr.map(x=>x.totalMin), metaMin, 1);
+  const metaPct = Math.min(100, (metaMin/scaleMax)*100);
+  const rows = arr.map(x=>{
+    const normalMin = Math.min(x.totalMin, metaMin);
+    const exceedMin = Math.max(0, x.totalMin - metaMin);
+    const normalPct = Math.max(x.totalMin>0?1:0, Math.round((normalMin/scaleMax)*100));
+    const exceedPct = Math.round((exceedMin/scaleMax)*100);
+    return `
     <div class="bar-row">
       <div class="bar-name" title="${escapeHtml(x.nombre)}">${escapeHtml(x.nombre)}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,Math.round((x.totalMin/max)*100))}%"></div></div>
-      <div class="bar-value">${minToHM(x.totalMin)}</div>
-    </div>`).join('');
+      <div class="bar-track">
+        <div class="bar-meta-line" style="left:${metaPct}%;" title="Meta: ${minToHM(metaMin)}"></div>
+        <div class="bar-fill-wrap">
+          <div class="bar-fill" style="width:${normalPct}%"></div>
+          ${exceedMin>0 ? `<div class="bar-fill-exceso" style="width:${exceedPct}%"></div>` : ''}
+        </div>
+      </div>
+      <div class="bar-value${exceedMin>0?' bar-value-exceso':''}">${minToHM(x.totalMin)}</div>
+    </div>`;
+  }).join('');
   return `
   <div class="card">
     <h2>Horas totales por enfermero/a (periodo filtrado)</h2>
+    <p class="muted small">La línea marca la meta de <b>${minToHM(metaMin)}</b> (un turno estándar). Lo que se pasa de esa línea se pinta en rojo.</p>
     <div class="barchart">${rows}</div>
   </div>`;
 }
 
-function licPorActividad(){
-  const regs = filteredRegistros();
+// Agrupa los items de los registros filtrados por categoría+actividad+
+// grado+personal (usado por la pestaña "Por actividad" y por la Vista
+// previa de Reportes, para que ambos muestren exactamente lo mismo).
+function porActividadStats(regs){
   const map = {};
   let granTotal = 0;
   regs.forEach(r=> r.items.forEach(it=>{
@@ -1187,6 +1225,32 @@ function licPorActividad(){
     granTotal += it.subtotal;
   }));
   const arr = Object.values(map).sort((a,b)=> b.minutos-a.minutos);
+  return { arr, granTotal };
+}
+
+// Agrupa los items por paciente, SIN importar quién lo atendió ni en qué
+// turno -- un total consolidado por paciente para todo el periodo/alcance
+// filtrado. Complementa el desglose por-paciente-dentro-de-cada-turno que
+// ya existe en Resumen (que es por persona), mostrando en cambio "¿qué
+// pacientes concentraron más tiempo de atención en total?".
+function resumenPorPacienteStats(regs){
+  const map = {};
+  let granTotal = 0;
+  regs.forEach(r=> r.items.forEach(it=>{
+    const pid = it.pacienteId || '__general__';
+    const pname = it.pacienteNombre || 'Actividades generales / administrativas';
+    if(!map[pid]) map[pid] = { pacienteNombre: pname, minutos:0, cantidadActividades:0 };
+    map[pid].minutos += it.subtotal;
+    map[pid].cantidadActividades += it.cantidad;
+    granTotal += it.subtotal;
+  }));
+  const arr = Object.values(map).sort((a,b)=> b.minutos-a.minutos);
+  return { arr, granTotal };
+}
+
+function licPorActividad(){
+  const regs = filteredRegistros();
+  const { arr, granTotal } = porActividadStats(regs);
   const rows = arr.map(x=>`<tr>
     <td>${escapeHtml(x.categoria)}</td>
     <td>${escapeHtml(x.actividad)}${x.grado?' (G'+x.grado.slice(-1)+')':''}</td>
@@ -1206,6 +1270,68 @@ function licPorActividad(){
     ${arr.length ? `<tfoot><tr><th colspan="4" style="text-align:right;">Total general</th><th>${minToHM(granTotal)}</th></tr></tfoot>` : ''}
     </table></div>
   </div>`;
+}
+
+// Pestaña "Reportes": junta en una sola vista previa todo lo que trae el
+// reporte descargable (resumen por turno, horas por enfermero, por
+// actividad y por paciente), usando los MISMOS filtros de arriba (fecha,
+// turno, personal) -- no hace falta un selector aparte de "completo vs por
+// partes": dejar Personal en "Todos" da el reporte general completo, y
+// elegir a alguien específico (o un turno) da el reporte "por partes".
+function licReportes(){
+  const regs = filteredRegistros();
+  const groups = buildResumenGroups();
+  const { totalMinGD, totalMinGN, excesoMinTotal, excesoTurnos } = resumenStats(groups);
+  const { arr: actArr, granTotal: actTotal } = porActividadStats(regs);
+  const { arr: pacArr, granTotal: pacTotal } = resumenPorPacienteStats(regs);
+
+  const actRowsHtml = actArr.slice(0,15).map(x=>`<tr>
+    <td>${escapeHtml(x.categoria)}</td>
+    <td>${escapeHtml(x.actividad)}${x.grado?' (G'+x.grado.slice(-1)+')':''}</td>
+    <td>${escapeHtml(x.personal)}</td>
+    <td>${x.cantidad}</td>
+    <td>${minToHM(x.minutos)}</td>
+  </tr>`).join('') || `<tr><td colspan="5" class="empty-state">Sin datos en el rango seleccionado.</td></tr>`;
+
+  const pacRowsHtml = pacArr.slice(0,15).map(x=>`<tr>
+    <td>${escapeHtml(x.pacienteNombre)}</td>
+    <td>${x.cantidadActividades}</td>
+    <td>${minToHM(x.minutos)}</td>
+  </tr>`).join('') || `<tr><td colspan="3" class="empty-state">Sin datos en el rango seleccionado.</td></tr>`;
+
+  return `
+  ${licFiltrosHtml()}
+  <div class="card">
+    <h2>📄 Vista previa del reporte</h2>
+    <p class="muted small">Esto es exactamente lo que trae el archivo al descargarlo, para revisarlo antes. Con <b>Personal = Todos</b> obtienes el reporte general completo; eligiendo a una persona (o un turno) en los filtros de arriba obtienes el reporte "por partes", ya filtrado.</p>
+  </div>
+  <div class="summary-cards">
+    <div class="stat-card"><div class="num">${groups.length}</div><div class="lbl">Turnos registrados</div></div>
+    <div class="stat-card"><div class="num">${minToHHMM(totalMinGD)}</div><div class="lbl">Total turno Diurno</div></div>
+    <div class="stat-card"><div class="num">${minToHHMM(totalMinGN)}</div><div class="lbl">Total turno Nocturno</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--danger)">${minToHHMM(excesoMinTotal)}</div><div class="lbl">Exceso sobre turno estándar (${excesoTurnos} turno${excesoTurnos===1?'':'s'})</div></div>
+  </div>
+  ${licGraficoHorasPorEnfermero(groups)}
+  <div class="card">
+    <h2>Por actividad (hoja "Por actividad")</h2>
+    <p class="muted small">Qué actividades consumen más tiempo y quién las realizó${actArr.length>15?' — se muestran las 15 con más tiempo; el archivo trae todas':''}.</p>
+    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Personal</th><th>Cant.</th><th>Tiempo total</th></tr></thead><tbody>${actRowsHtml}</tbody>
+    ${actArr.length ? `<tfoot><tr><th colspan="4" style="text-align:right;">Total general</th><th>${minToHM(actTotal)}</th></tr></tfoot>` : ''}
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>Resumen por paciente (hoja "Resumen por paciente")</h2>
+    <p class="muted small">Total de tiempo invertido por paciente, sumando a TODO el personal que lo atendió en el periodo filtrado${pacArr.length>15?' — se muestran los 15 con más tiempo; el archivo trae todos':''}.</p>
+    <div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Actividades</th><th>Tiempo total</th></tr></thead><tbody>${pacRowsHtml}</tbody>
+    ${pacArr.length ? `<tfoot><tr><th colspan="2" style="text-align:right;">Total general</th><th>${minToHM(pacTotal)}</th></tr></tfoot>` : ''}
+    </table></div>
+  </div>
+  <div class="card center">
+    <h2>Descargar</h2>
+    <p class="muted small">Un solo archivo Excel (.xlsx) con todas estas secciones en hojas separadas, respetando los filtros de arriba. Se abre perfecto en Google Sheets: solo súbelo desde Drive → Archivo → Importar.</p>
+    <button class="btn btn-block" id="btnExportExcelReportes">📊 Descargar reporte completo (.xlsx)</button>
+  </div>
+  `;
 }
 
 function licPersonal(){
@@ -1436,6 +1562,8 @@ function bindLicenciadaEvents(){
   if(btnCsvRes) btnCsvRes.onclick = exportCsvResumen;
   const btnExcel = document.getElementById('btnExportExcel');
   if(btnExcel) btnExcel.onclick = exportExcelReporte;
+  const btnExcelReportes = document.getElementById('btnExportExcelReportes');
+  if(btnExcelReportes) btnExcelReportes.onclick = exportExcelReporte;
 
   // Personal
   document.querySelectorAll('[data-toggle-activo]').forEach(el=>{
@@ -1770,20 +1898,25 @@ function exportExcelReporte(){
     });
   });
 
-  const mapAct = {};
-  regs.forEach(r=> r.items.forEach(it=>{
-    const key = it.categoriaNombre+'|'+it.actividadNombre+'|'+(it.grado||'')+'|'+r.personalNombre;
-    if(!mapAct[key]) mapAct[key] = {categoria:it.categoriaNombre, actividad:it.actividadNombre, grado:it.grado, personal:r.personalNombre, cantidad:0, minutos:0};
-    mapAct[key].cantidad += it.cantidad; mapAct[key].minutos += it.subtotal;
-  }));
+  const { arr: actArr } = porActividadStats(regs);
   const porActRows = [['Categoría','Actividad','Grado','Personal','Cantidad','Tiempo total (min)']];
-  Object.values(mapAct).sort((a,b)=>b.minutos-a.minutos).forEach(x=>{
+  actArr.forEach(x=>{
     porActRows.push([x.categoria, x.actividad, x.grado?('G'+x.grado.replace('grado','')):'', x.personal, x.cantidad, x.minutos]);
+  });
+
+  // Total consolidado por paciente (sumando a TODO el personal que lo
+  // atendió en el periodo filtrado) -- responde "¿qué pacientes
+  // concentraron más tiempo de atención?", útil para un reporte/tesis.
+  const { arr: pacArr } = resumenPorPacienteStats(regs);
+  const resumenPacRows = [['Paciente','Cantidad de actividades','Tiempo total (HH:MM)','Tiempo total (min)']];
+  pacArr.forEach(x=>{
+    resumenPacRows.push([x.pacienteNombre, x.cantidadActividades, minToHM(x.minutos), x.minutos]);
   });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenRows), 'Resumen por turno');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(horasRows), 'Horas por enfermero');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenPacRows), 'Resumen por paciente');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detPacRows), 'Detalle por paciente');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detActRows), 'Detalle actividades');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(porActRows), 'Por actividad');
