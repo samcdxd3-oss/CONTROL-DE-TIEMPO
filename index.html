@@ -1248,6 +1248,85 @@ function resumenPorPacienteStats(regs){
   return { arr, granTotal };
 }
 
+/* ------------------ Formato "clásico" (tabla dinámica al estilo del Excel original) ------------------
+   El Excel que se usaba desde 2014 (hojas Rep.enfermo-funcion,
+   Rep.Funcion-Fecha-tiempo, Rep.Funcion-Fecha-cantidad) mostraba una tabla
+   dinámica: cada fila es una "Función Asistencial" (algo como "Pac Grado 3
+   (8-FUNCION ADMINISTRATIVA) - preparacion de HCl."), cada columna es una
+   enfermera, y las celdas son la cantidad o los minutos, con un "Total
+   general" al pie y a la derecha. Esto arma ese mismo formato con los
+   datos actuales, para que la Licenciada lo reconozca de inmediato. */
+function funcionAsistencialLabel(it){
+  const gradoTxt = it.grado ? ('Pac Grado '+it.grado.slice(-1)+' ') : '';
+  return `${gradoTxt}(${it.categoriaNombre}) - ${it.actividadNombre}`;
+}
+function buildPivotFuncionPersonal(regs){
+  const personasMap = new Map(); // id -> nombre (en orden de aparición)
+  const filasMap = {};
+  regs.forEach(r=>{
+    if(!personasMap.has(r.personalId)) personasMap.set(r.personalId, r.personalNombre);
+    r.items.forEach(it=>{
+      const label = funcionAsistencialLabel(it);
+      if(!filasMap[label]) filasMap[label] = { cantidadPorPersona:{}, minutosPorPersona:{}, cantidadTotal:0, minutosTotal:0 };
+      const f = filasMap[label];
+      f.cantidadPorPersona[r.personalId] = (f.cantidadPorPersona[r.personalId]||0) + it.cantidad;
+      f.minutosPorPersona[r.personalId] = (f.minutosPorPersona[r.personalId]||0) + it.subtotal;
+      f.cantidadTotal += it.cantidad;
+      f.minutosTotal += it.subtotal;
+    });
+  });
+  const personas = Array.from(personasMap.entries()).map(([id,nombre])=>({id,nombre})).sort((a,b)=> a.nombre.localeCompare(b.nombre));
+  const filas = Object.entries(filasMap).map(([label,f])=>({ label, ...f })).sort((a,b)=> b.minutosTotal - a.minutosTotal);
+  return { personas, filas };
+}
+// Convierte el pivot a filas de hoja de cálculo (array-de-arrays), para la
+// variante en minutos o en cantidad -- con fila y columna de Total general.
+function pivotToAoA(pivot, campo){
+  const totalKey = campo==='cantidadPorPersona' ? 'cantidadTotal' : 'minutosTotal';
+  const header = ['Función Asistencial', ...pivot.personas.map(p=>p.nombre), 'Total general'];
+  const rows = [header];
+  pivot.filas.forEach(f=>{
+    const row = [f.label];
+    pivot.personas.forEach(p=> row.push(f[campo][p.id]||0));
+    row.push(f[totalKey]);
+    rows.push(row);
+  });
+  const totalRow = ['Total general'];
+  let granTotal = 0;
+  pivot.personas.forEach(p=>{
+    let sum=0; pivot.filas.forEach(f=> sum += (f[campo][p.id]||0));
+    totalRow.push(sum);
+    granTotal += sum;
+  });
+  totalRow.push(granTotal);
+  rows.push(totalRow);
+  return rows;
+}
+// Vista HTML del pivot (para la vista previa en pantalla) -- muestra la
+// variante en minutos, limitada a las filas con más tiempo si hay muchas.
+function pivotToHtml(pivot, maxFilas){
+  if(pivot.filas.length===0 || pivot.personas.length===0){
+    return `<div class="empty-state small">Sin datos en el rango seleccionado.</div>`;
+  }
+  const filas = maxFilas ? pivot.filas.slice(0,maxFilas) : pivot.filas;
+  const head = `<th>Función Asistencial</th>` + pivot.personas.map(p=>`<th>${escapeHtml(p.nombre)}</th>`).join('') + `<th>Total</th>`;
+  const body = filas.map(f=>{
+    const cells = pivot.personas.map(p=>`<td>${f.minutosPorPersona[p.id] ? minToHM(f.minutosPorPersona[p.id]) : '—'}</td>`).join('');
+    return `<tr><td>${escapeHtml(f.label)}</td>${cells}<td><b>${minToHM(f.minutosTotal)}</b></td></tr>`;
+  }).join('');
+  const totalPorPersona = pivot.personas.map(p=>{
+    let sum=0; pivot.filas.forEach(f=> sum += (f.minutosPorPersona[p.id]||0));
+    return `<th>${minToHM(sum)}</th>`;
+  }).join('');
+  const granTotal = pivot.filas.reduce((s,f)=>s+f.minutosTotal,0);
+  return `
+  <div class="table-wrap"><table>
+    <thead><tr>${head}</tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><th>Total general</th>${totalPorPersona}<th>${minToHM(granTotal)}</th></tr></tfoot>
+  </table></div>`;
+}
+
 function licPorActividad(){
   const regs = filteredRegistros();
   const { arr, granTotal } = porActividadStats(regs);
@@ -1284,6 +1363,7 @@ function licReportes(){
   const { totalMinGD, totalMinGN, excesoMinTotal, excesoTurnos } = resumenStats(groups);
   const { arr: actArr, granTotal: actTotal } = porActividadStats(regs);
   const { arr: pacArr, granTotal: pacTotal } = resumenPorPacienteStats(regs);
+  const pivot = buildPivotFuncionPersonal(regs);
 
   const actRowsHtml = actArr.slice(0,15).map(x=>`<tr>
     <td>${escapeHtml(x.categoria)}</td>
@@ -1303,8 +1383,9 @@ function licReportes(){
   ${licFiltrosHtml()}
   <div class="card">
     <h2>📄 Vista previa del reporte</h2>
-    <p class="muted small">Esto es exactamente lo que trae el archivo al descargarlo, para revisarlo antes. Con <b>Personal = Todos</b> obtienes el reporte general completo; eligiendo a una persona (o un turno) en los filtros de arriba obtienes el reporte "por partes", ya filtrado.</p>
+    <p class="muted small">Esto es exactamente lo que trae el archivo al descargarlo, para revisarlo antes. Con <b>Personal = Todos</b> obtienes el reporte general completo; eligiendo a una persona (o un turno) en los filtros de arriba obtienes el reporte "por partes", ya filtrado. Hay <b>dos formatos</b> en el mismo archivo: uno simple (moderno) y otro clásico, al estilo del Excel que ya se usaba — elige el que le resulte más cómodo a la Licenciada.</p>
   </div>
+  <h3 style="margin:18px 0 4px;">Formato simple</h3>
   <div class="summary-cards">
     <div class="stat-card"><div class="num">${groups.length}</div><div class="lbl">Turnos registrados</div></div>
     <div class="stat-card"><div class="num">${minToHHMM(totalMinGD)}</div><div class="lbl">Total turno Diurno</div></div>
@@ -1326,9 +1407,17 @@ function licReportes(){
     ${pacArr.length ? `<tfoot><tr><th colspan="2" style="text-align:right;">Total general</th><th>${minToHM(pacTotal)}</th></tr></tfoot>` : ''}
     </table></div>
   </div>
+
+  <h3 style="margin:22px 0 4px;">Formato clásico (como el Excel que ya se usaba)</h3>
+  <div class="card">
+    <h2>Función Asistencial × Enfermero/a</h2>
+    <p class="muted small">Mismo formato de tabla dinámica que las hojas "Rep.enfermo-funcion" / "Rep.Funcion-Fecha" del Excel original: cada fila es una <b>Función Asistencial</b> (grado + categoría + actividad), cada columna es un enfermero/a, y la celda es el tiempo total — con "Total general" al pie y a la derecha${pivot.filas.length>20?'. Se muestran las 20 funciones con más tiempo; el archivo trae todas':''}. El archivo descargable trae esta misma tabla dos veces: una en <b>minutos</b> y otra en <b>cantidad de veces</b> (como "Suma de Tot.Min" y "Suma de Cantidad" en el Excel original).</p>
+    ${pivotToHtml(pivot, 20)}
+  </div>
+
   <div class="card center">
     <h2>Descargar</h2>
-    <p class="muted small">Un solo archivo Excel (.xlsx) con todas estas secciones en hojas separadas, respetando los filtros de arriba. Se abre perfecto en Google Sheets: solo súbelo desde Drive → Archivo → Importar.</p>
+    <p class="muted small">Un solo archivo Excel (.xlsx) con los dos formatos, cada tabla en su propia hoja, respetando los filtros de arriba. Se abre perfecto en Google Sheets: solo súbelo desde Drive → Archivo → Importar.</p>
     <button class="btn btn-block" id="btnExportExcelReportes">📊 Descargar reporte completo (.xlsx)</button>
   </div>
   `;
@@ -1913,6 +2002,13 @@ function exportExcelReporte(){
     resumenPacRows.push([x.pacienteNombre, x.cantidadActividades, minToHM(x.minutos), x.minutos]);
   });
 
+  // Formato "clásico": tabla dinámica Función Asistencial × Enfermero/a,
+  // igual que las hojas Rep.enfermo-funcion / Rep.Funcion-Fecha-tiempo /
+  // Rep.Funcion-Fecha-cantidad del Excel que ya se usaba desde 2014.
+  const pivot = buildPivotFuncionPersonal(regs);
+  const pivotMinRows = pivotToAoA(pivot, 'minutosPorPersona');
+  const pivotCantRows = pivotToAoA(pivot, 'cantidadPorPersona');
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenRows), 'Resumen por turno');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(horasRows), 'Horas por enfermero');
@@ -1920,6 +2016,8 @@ function exportExcelReporte(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detPacRows), 'Detalle por paciente');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detActRows), 'Detalle actividades');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(porActRows), 'Por actividad');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivotMinRows), 'Función x Enfermero (min)');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivotCantRows), 'Función x Enfermero (cant)');
   XLSX.writeFile(wb, 'reporte_productividad_'+todayISO()+'.xlsx');
 }
 
