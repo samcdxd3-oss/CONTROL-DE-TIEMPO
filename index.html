@@ -134,6 +134,15 @@ tr:last-child td{border-bottom:none;}
 .clickable{cursor:pointer;}
 .dim{opacity:.55;}
 .person-row td{background:var(--primary-light); font-weight:700; border-top:2px solid var(--border); padding-top:9px; padding-bottom:9px;}
+/* Tablas de la pestaña "Reportes" (formato simple y clásico): cuadrícula
+   y encabezado de color para que se vean como una hoja de Excel real,
+   no solo datos planos -- lo que pidió la Licenciada. */
+.excel-table{border:1px solid var(--border); border-radius:8px;}
+.excel-table table{border-collapse:collapse; width:100%;}
+.excel-table th, .excel-table td{border:1px solid var(--border); padding:7px 9px; font-size:12.5px;}
+.excel-table thead th{background:var(--primary); color:#fff; text-transform:none; letter-spacing:0; font-weight:700; font-size:12.5px; text-align:center;}
+.excel-table tbody tr:nth-child(even) td{background:#f5f8fc;}
+.excel-table tfoot th{background:var(--primary-light); color:var(--primary-dark); font-weight:800; border-top:2px solid var(--primary);}
 footer.appfoot{text-align:center; color:var(--muted); font-size:12px; padding:18px 10px 40px;}
 hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 .inline-edit input{width:64px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center;}
@@ -171,7 +180,7 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script>
 /* ======================================================================
    Control de Productividad UCI - Enfermería
@@ -1320,7 +1329,7 @@ function pivotToHtml(pivot, maxFilas){
   }).join('');
   const granTotal = pivot.filas.reduce((s,f)=>s+f.minutosTotal,0);
   return `
-  <div class="table-wrap"><table>
+  <div class="table-wrap excel-table"><table>
     <thead><tr>${head}</tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><th>Total general</th>${totalPorPersona}<th>${minToHM(granTotal)}</th></tr></tfoot>
@@ -1396,14 +1405,14 @@ function licReportes(){
   <div class="card">
     <h2>Por actividad (hoja "Por actividad")</h2>
     <p class="muted small">Qué actividades consumen más tiempo y quién las realizó${actArr.length>15?' — se muestran las 15 con más tiempo; el archivo trae todas':''}.</p>
-    <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Personal</th><th>Cant.</th><th>Tiempo total</th></tr></thead><tbody>${actRowsHtml}</tbody>
+    <div class="table-wrap excel-table"><table><thead><tr><th>Categoría</th><th>Actividad</th><th>Personal</th><th>Cant.</th><th>Tiempo total</th></tr></thead><tbody>${actRowsHtml}</tbody>
     ${actArr.length ? `<tfoot><tr><th colspan="4" style="text-align:right;">Total general</th><th>${minToHM(actTotal)}</th></tr></tfoot>` : ''}
     </table></div>
   </div>
   <div class="card">
     <h2>Resumen por paciente (hoja "Resumen por paciente")</h2>
     <p class="muted small">Total de tiempo invertido por paciente, sumando a TODO el personal que lo atendió en el periodo filtrado${pacArr.length>15?' — se muestran los 15 con más tiempo; el archivo trae todos':''}.</p>
-    <div class="table-wrap"><table><thead><tr><th>Paciente</th><th>Actividades</th><th>Tiempo total</th></tr></thead><tbody>${pacRowsHtml}</tbody>
+    <div class="table-wrap excel-table"><table><thead><tr><th>Paciente</th><th>Actividades</th><th>Tiempo total</th></tr></thead><tbody>${pacRowsHtml}</tbody>
     ${pacArr.length ? `<tfoot><tr><th colspan="2" style="text-align:right;">Total general</th><th>${minToHM(pacTotal)}</th></tr></tfoot>` : ''}
     </table></div>
   </div>
@@ -1940,6 +1949,72 @@ function exportCsvResumen(){
   downloadFile('resumen_productividad_'+todayISO()+'.csv', out.join('\n'), 'text/csv;charset=utf-8');
 }
 
+/* ------ Estilo tipo Excel para el archivo descargable ------
+   La Licenciada pidió que el reporte se VEA como el Excel que ya usaba
+   desde 2014 (encabezado de color, cuadrícula, fila/columna de "Total
+   general" resaltada) y no solo que tenga los mismos datos. SheetJS
+   permite escribir estilos por celda (.s) en hojas .xlsx; lo aplicamos
+   con try/catch en cada paso para que, si algo del estilo falla, el
+   archivo igual se descargue (sin estilo) en vez de romperse. */
+const XLS_COLOR_HEADER_BG = '2563A8';
+const XLS_COLOR_HEADER_FG = 'FFFFFF';
+const XLS_COLOR_TOTAL_BG  = 'D9E4F5';
+const XLS_COLOR_DANGER_BG = 'FBE1E1';
+const XLS_COLOR_WARN_BG   = 'FFF3D6';
+const XLS_BORDER_THIN = { style:'thin', color:{ rgb:'BFBFBF' } };
+const XLS_BORDER_ALL  = { top:XLS_BORDER_THIN, bottom:XLS_BORDER_THIN, left:XLS_BORDER_THIN, right:XLS_BORDER_THIN };
+
+function xlsHeaderStyle(){
+  return { font:{ bold:true, color:{ rgb:XLS_COLOR_HEADER_FG } }, fill:{ fgColor:{ rgb:XLS_COLOR_HEADER_BG } }, alignment:{ horizontal:'center', vertical:'center', wrapText:true }, border: XLS_BORDER_ALL };
+}
+function xlsTotalStyle(){
+  return { font:{ bold:true }, fill:{ fgColor:{ rgb:XLS_COLOR_TOTAL_BG } }, border: XLS_BORDER_ALL };
+}
+function xlsDataStyle(){
+  return { border: XLS_BORDER_ALL };
+}
+
+// Aplica cuadrícula + encabezado de color + fila/columna de "Total
+// general" resaltada a una hoja creada con aoa_to_sheet, para que se vea
+// como una tabla dinámica de Excel real (no solo datos planos), y ajusta
+// el ancho de columnas según el contenido más largo de cada una.
+function styleSheetLikeExcel(ws, numRows, numCols, {totalRow=false, totalCol=false} = {}){
+  for(let r=0; r<numRows; r++){
+    for(let c=0; c<numCols; c++){
+      const addr = XLSX.utils.encode_cell({r,c});
+      if(!ws[addr]) ws[addr] = { t:'s', v:'' };
+      const isHeader = r===0;
+      const isTotalRow = totalRow && r===numRows-1;
+      const isTotalCol = totalCol && c===numCols-1;
+      if(isHeader) ws[addr].s = xlsHeaderStyle();
+      else if(isTotalRow || isTotalCol) ws[addr].s = xlsTotalStyle();
+      else ws[addr].s = xlsDataStyle();
+    }
+  }
+  const cols = [];
+  for(let c=0;c<numCols;c++){
+    let maxLen = 8;
+    for(let r=0;r<numRows;r++){
+      const addr = XLSX.utils.encode_cell({r,c});
+      const val = ws[addr] ? String(ws[addr].v==null?'':ws[addr].v) : '';
+      maxLen = Math.max(maxLen, val.length);
+    }
+    cols.push({ wch: Math.min(maxLen+2, 42) });
+  }
+  ws['!cols'] = cols;
+  ws['!rows'] = [{ hpt:20 }];
+}
+
+// Crea la hoja a partir de filas (array-de-arrays), le aplica el estilo
+// tipo Excel (protegido con try/catch: si el estilo falla, la hoja se
+// agrega igual, solo que sin color) y la agrega al libro.
+function appendStyledSheet(wb, rows, name, opts={}){
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  try{ styleSheetLikeExcel(ws, rows.length, (rows[0]||[]).length, opts); }catch(e){ console.error('No se pudo aplicar estilo a la hoja "'+name+'"', e); }
+  XLSX.utils.book_append_sheet(wb, ws, name);
+  return ws;
+}
+
 /* Reporte Excel (.xlsx) con varias hojas, como el Excel original -- pero
    solo con lo necesario: resumen por turno, horas por enfermero/a, detalle
    por paciente, detalle de actividades y el acumulado por actividad.
@@ -2010,15 +2085,37 @@ function exportExcelReporte(){
   const pivotCantRows = pivotToAoA(pivot, 'cantidadPorPersona');
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenRows), 'Resumen por turno');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(horasRows), 'Horas por enfermero');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenPacRows), 'Resumen por paciente');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detPacRows), 'Detalle por paciente');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detActRows), 'Detalle actividades');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(porActRows), 'Por actividad');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivotMinRows), 'Función x Enfermero (min)');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pivotCantRows), 'Función x Enfermero (cant)');
-  XLSX.writeFile(wb, 'reporte_productividad_'+todayISO()+'.xlsx');
+  const wsResumen = appendStyledSheet(wb, resumenRows, 'Resumen por turno');
+  appendStyledSheet(wb, horasRows, 'Horas por enfermero');
+  appendStyledSheet(wb, resumenPacRows, 'Resumen por paciente');
+  appendStyledSheet(wb, detPacRows, 'Detalle por paciente');
+  appendStyledSheet(wb, detActRows, 'Detalle actividades');
+  appendStyledSheet(wb, porActRows, 'Por actividad');
+  appendStyledSheet(wb, pivotMinRows, 'Función x Enfermero (min)', {totalRow:true, totalCol:true});
+  appendStyledSheet(wb, pivotCantRows, 'Función x Enfermero (cant)', {totalRow:true, totalCol:true});
+
+  // Resalta la columna "Estado" de "Resumen por turno" en rojo/ámbar
+  // (igual que el color rojo del gráfico cuando se excede la meta).
+  try{
+    const estadoCol = resumenRows[0].length - 1;
+    for(let r=1; r<resumenRows.length; r++){
+      const estado = resumenRows[r][estadoCol];
+      const addr = XLSX.utils.encode_cell({ r, c: estadoCol });
+      if(!wsResumen[addr]) continue;
+      if(estado==='Excede turno') wsResumen[addr].s = { ...wsResumen[addr].s, font:{bold:true}, fill:{fgColor:{rgb:XLS_COLOR_DANGER_BG}} };
+      else if(estado==='Cerca del límite') wsResumen[addr].s = { ...wsResumen[addr].s, font:{bold:true}, fill:{fgColor:{rgb:XLS_COLOR_WARN_BG}} };
+    }
+  }catch(e){ console.error('No se pudo resaltar la columna Estado', e); }
+
+  const filename = 'reporte_productividad_'+todayISO()+'.xlsx';
+  try{
+    XLSX.writeFile(wb, filename, { cellStyles:true });
+  }catch(e){
+    // Si por algún motivo escribir con estilos falla, no dejamos al
+    // usuario sin su reporte: reintentamos sin estilo.
+    console.error('Fallo al generar el Excel con estilo, reintentando sin estilo', e);
+    XLSX.writeFile(wb, filename);
+  }
 }
 
 /* -------------------------------- Init -------------------------------- */
