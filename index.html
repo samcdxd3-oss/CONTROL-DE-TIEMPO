@@ -279,6 +279,13 @@ function minToHM(min){
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Pone en mayúscula la primera letra de cada palabra (para nombres y
+// apellidos que el personal escribe a mano, evitando "juan perez" o
+// "JUAN PEREZ" sueltos). Soporta tildes/ñ y apellidos con guion o "de/del/la".
+function titleCase(s){
+  return String(s||'').trim().replace(/\s+/g,' ').toLowerCase()
+    .replace(/(^|[\s\-])([a-záéíóúñü])/g, (m, sep, c) => sep + c.toUpperCase());
+}
 function toast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -548,6 +555,18 @@ function attachFirestoreListenersPersonal(personalId){
 
 function pacientesActivos(){
   return STATE.pacientes.filter(p=>p.activo);
+}
+// Al crear un paciente nuevo desde el modal, lo elegimos de inmediato sin
+// esperar a que el listener de Firestore actualice STATE.pacientes (que
+// llega casi al instante, pero no siempre a tiempo para el siguiente
+// render). Este cache cubre ese hueco para que el nombre no salga en
+// blanco mientras tanto.
+function resolvePaciente(pid){
+  if(!pid) return null;
+  const p = STATE.pacientes.find(x=>x.id===pid);
+  if(p) return p;
+  if(modalState.pacienteCache && modalState.pacienteCache.id === pid) return modalState.pacienteCache;
+  return null;
 }
 function pacienteLabel(p){
   return p.nombres+' '+p.apellidos + (p.cama ? ' — Cama '+p.cama : '') + ' — Grado '+p.grado;
@@ -922,10 +941,10 @@ function viewHistorial(){
 // pacientes de ese grado la recibieron), y el paciente era solo un registro
 // aparte (nombre/cama/fechas) sin grado asociado. Elegir primero al paciente
 // NO ata su grado fijo de la lista de Pacientes al de la actividad.
-let modalState = { open:false, step:'paciente', categoriaId:null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
+let modalState = { open:false, step:'paciente', categoriaId:null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1, mostrarNuevoPaciente:false, pacienteCache:null };
 
 function openAddModal(){
-  modalState = { open:true, step:'paciente', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
+  modalState = { open:true, step:'paciente', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1, mostrarNuevoPaciente:false, pacienteCache:null };
   renderModal();
 }
 function closeModal(){
@@ -942,18 +961,45 @@ function renderModal(){
     const list = activos.map(p=>`
       <div class="act-item clickable" data-pick-paciente="${p.id}">
         <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)):''}</div></div>
-        <div class="muted">›</div>
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+          <select data-edit-grado-modal="${p.id}" title="Grado del paciente" style="width:auto; padding:4px 6px;">
+            <option value="1" ${p.grado==1?'selected':''}>G1</option>
+            <option value="2" ${p.grado==2?'selected':''}>G2</option>
+            <option value="3" ${p.grado==3?'selected':''}>G3</option>
+          </select>
+          <button type="button" class="btn btn-outline btn-sm" data-del-paciente-modal="${p.id}">Eliminar</button>
+          <div class="muted">›</div>
+        </div>
       </div>`).join('');
     const sinPacienteOpt = `<div class="act-item clickable" data-pick-paciente="">
         <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente en particular</div></div>
         <div class="muted">›</div>
       </div>`;
+    const nuevoPacienteBlock = modalState.mostrarNuevoPaciente ? `
+      <div class="card" style="margin-top:12px; padding:12px;">
+        <h3 style="margin-top:0;">Nuevo paciente</h3>
+        <div class="grid2">
+          <div class="field"><label>Nombres</label><input id="modalNpacNombres" placeholder="Ej: juan carlos"></div>
+          <div class="field"><label>Apellidos</label><input id="modalNpacApellidos" placeholder="Ej: perez lopez"></div>
+          <div class="field"><label>Cama</label><input id="modalNpacCama" placeholder="Opcional"></div>
+          <div class="field"><label>Grado</label>
+            <select id="modalNpacGrado"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select>
+          </div>
+        </div>
+        <p class="muted small">No hace falta escribir en mayúsculas: se guarda con la primera letra de cada nombre en mayúscula automáticamente. Este paciente queda disponible para todo el personal del área, para que nadie tenga que volver a escribirlo mañana.</p>
+        <div class="form-row">
+          <button class="btn" id="btnGuardarNuevoPaciente">Guardar y continuar</button>
+          <button class="btn btn-outline" id="btnCancelarNuevoPaciente">Cancelar</button>
+        </div>
+      </div>` : `
+      <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnMostrarNuevoPaciente">+ Nuevo paciente</button>`;
     root.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-head"><h3>¿A qué paciente?</h3><button class="close-x" id="modalClose">×</button></div>
-        <p class="muted small">Primero elige el paciente (o "Sin paciente / actividad general" si no aplica a uno en particular); después eliges qué actividad le hiciste.</p>
+        <p class="muted small">Primero elige el paciente (o "Sin paciente / actividad general" si no aplica a uno en particular); después eliges qué actividad le hiciste. Si el paciente todavía no está en la lista, regístralo aquí mismo.</p>
         <div class="act-list">${sinPacienteOpt}${list}</div>
+        ${nuevoPacienteBlock}
       </div>
     </div>`;
   } else if(modalState.step === 'actividad'){
@@ -984,7 +1030,7 @@ function renderModal(){
       </div>`;
     }).join('') || `<div class="empty-state small">Sin resultados.</div>`;
 
-    const pacienteSel = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+    const pacienteSel = resolvePaciente(modalState.pacienteId);
     const pacienteTxt = modalState.pacienteId===null ? 'Sin paciente / actividad general' : (pacienteSel ? (pacienteSel.nombres+' '+pacienteSel.apellidos) : '');
 
     root.innerHTML = `
@@ -1001,7 +1047,7 @@ function renderModal(){
     </div>`;
   } else if(modalState.step === 'cantidad'){
     const a = modalState.actividad;
-    const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+    const paciente = resolvePaciente(modalState.pacienteId);
     const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
     const subtotal = tiempoUnit!=null ? tiempoUnit*modalState.cantidad : null;
 
@@ -1073,6 +1119,65 @@ function renderModal(){
       renderModal();
     };
   });
+  // Grado inline por paciente, editable directamente desde este paso por
+  // cualquiera del personal (no solo la Licenciada): el que quede fijado
+  // aquí es el que sale marcado por defecto la próxima vez que alguien
+  // (esta persona u otra) elija a este mismo paciente para una actividad.
+  document.querySelectorAll('[data-edit-grado-modal]').forEach(el=>{
+    el.onclick = (e)=> e.stopPropagation();
+    el.onchange = (e)=>{
+      e.stopPropagation();
+      areaCol('pacientes').doc(el.getAttribute('data-edit-grado-modal')).update({grado: Number(el.value)})
+        .then(()=>toast('Grado del paciente actualizado'))
+        .catch(err=>{ console.error(err); toast('Error: '+err.message); });
+    };
+  });
+  // Eliminar paciente directamente desde el registro de turno: cualquiera
+  // del personal puede quitarlo de la lista cuando el paciente se va de
+  // alta (los registros históricos que ya lo mencionan se conservan).
+  document.querySelectorAll('[data-del-paciente-modal]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      if(!confirm('¿Eliminar este paciente de la lista? Los registros históricos que lo mencionan se conservarán.')) return;
+      areaCol('pacientes').doc(el.getAttribute('data-del-paciente-modal')).delete()
+        .catch(err=>{ console.error(err); toast('Error: '+err.message); });
+    };
+  });
+  const btnMostrarNuevoPaciente = document.getElementById('btnMostrarNuevoPaciente');
+  if(btnMostrarNuevoPaciente) btnMostrarNuevoPaciente.onclick = ()=>{ modalState.mostrarNuevoPaciente = true; renderModal(); };
+  const btnCancelarNuevoPaciente = document.getElementById('btnCancelarNuevoPaciente');
+  if(btnCancelarNuevoPaciente) btnCancelarNuevoPaciente.onclick = ()=>{ modalState.mostrarNuevoPaciente = false; renderModal(); };
+  const btnGuardarNuevoPaciente = document.getElementById('btnGuardarNuevoPaciente');
+  if(btnGuardarNuevoPaciente){
+    btnGuardarNuevoPaciente.onclick = async ()=>{
+      const nombres = titleCase(document.getElementById('modalNpacNombres').value);
+      const apellidos = titleCase(document.getElementById('modalNpacApellidos').value);
+      const cama = document.getElementById('modalNpacCama').value.trim();
+      const grado = Number(document.getElementById('modalNpacGrado').value);
+      if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
+      btnGuardarNuevoPaciente.disabled = true;
+      try{
+        const id = uid('pac');
+        await areaCol('pacientes').doc(id).set({ nombres, apellidos, cama, grado, fechaIngreso: todayISO(), fechaAlta:'', activo:true });
+        toast('Paciente registrado');
+        // Lo dejamos elegido de una vez, para no obligar a buscarlo otra
+        // vez en la lista -- sigue el mismo flujo que si ya hubiera existido.
+        // pacienteCache cubre el instante entre este set() y que el listener
+        // de Firestore termine de reflejarlo en STATE.pacientes.
+        modalState.pacienteId = id;
+        modalState.pacienteCache = { id, nombres, apellidos, cama, grado, activo:true };
+        modalState.actividad = null;
+        modalState.cantidad = 1;
+        modalState.grado = 'grado'+grado;
+        modalState.mostrarNuevoPaciente = false;
+        modalState.step = 'actividad';
+        renderModal();
+      }catch(err){
+        console.error(err); toast('Error: '+err.message);
+        btnGuardarNuevoPaciente.disabled = false;
+      }
+    };
+  }
   const backToPacienteFromActividad = document.getElementById('btnBackToPacienteFromActividad');
   if(backToPacienteFromActividad) backToPacienteFromActividad.onclick = ()=>{ modalState.step='paciente'; renderModal(); };
   const backToActividad = document.getElementById('btnBackToActividadFromCantidad');
@@ -1088,7 +1193,7 @@ function renderModal(){
   if(confirmBtn){
     confirmBtn.onclick = ()=>{
       const a = modalState.actividad;
-      const paciente = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+      const paciente = resolvePaciente(modalState.pacienteId);
       const tiempoUnit = a.gradoDependiente ? a.tiempos[modalState.grado] : a.tiempoFijo;
       if(tiempoUnit==null){ toast('No se pudo calcular el tiempo para esta combinación'); return; }
       draft.items.push({
