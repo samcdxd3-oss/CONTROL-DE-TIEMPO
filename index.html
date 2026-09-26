@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Control de Productividad - UCI Enfermería</title>
+<title>Control de Productividad - Enfermería</title>
 <style>
 
 :root{
@@ -33,6 +33,7 @@ input,select,textarea{font-family:inherit; font-size:15px;}
 .brand-sub{font-size:12px; opacity:.85;}
 .user-badge{display:flex; align-items:center; gap:10px; font-size:13px;}
 .user-badge.hidden{display:none;}
+.hidden{display:none !important;}
 #main{max-width:920px; margin:0 auto; padding:14px 12px 60px;}
 .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow);}
 .card h2{font-size:17px;}
@@ -118,6 +119,14 @@ tr:last-child td{border-bottom:none;}
 .empty-state .ico{font-size:36px; margin-bottom:6px;}
 .login-wrap{max-width:400px; margin:40px auto;}
 .login-logo{text-align:center; font-size:44px; margin-bottom:6px;}
+/* Selector de área (Medicina, Neumología, ...): cada área es un espacio
+   totalmente independiente (su propio personal, pacientes y registros). */
+.area-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0;}
+@media(max-width:480px){.area-grid{grid-template-columns:1fr;}}
+.area-card{display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 10px; border:1px solid var(--border); border-radius:var(--radius); background:#fff; cursor:pointer; font-weight:700; color:var(--text); font-family:inherit;}
+.area-card:hover{border-color:var(--primary); background:var(--primary-light);}
+.area-card-icon{font-size:28px;}
+.area-card-nombre{font-size:14px; text-align:center;}
 .link-btn{background:none; border:none; color:var(--primary); font-weight:600; font-size:13.5px; padding:6px;}
 .summary-cards{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;}
 @media(max-width:640px){.summary-cards{grid-template-columns:repeat(2,1fr);}}
@@ -166,12 +175,13 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
   <div class="brand">
     <span class="brand-icon">🩺</span>
     <div>
-      <div class="brand-title">Productividad UCI</div>
+      <div class="brand-title" id="brandTitle">Productividad</div>
       <div class="brand-sub" id="brandSub">Registro de actividades de enfermería</div>
     </div>
   </div>
   <div id="userBadge" class="user-badge hidden">
     <span id="userBadgeName"></span>
+    <button id="btnCambiarArea" class="btn btn-ghost btn-sm">Cambiar área</button>
     <button id="btnLogout" class="btn btn-ghost btn-sm">Salir</button>
   </div>
 </header>
@@ -183,7 +193,7 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script>
 /* ======================================================================
-   Control de Productividad UCI - Enfermería
+   Control de Productividad - Enfermería (multi-área)
    App de un solo archivo HTML/JS. Los datos viven en Firestore (Firebase),
    compartidos en tiempo real entre todos los dispositivos autorizados.
    Acceso protegido por Google Sign-In + lista blanca de correos
@@ -215,15 +225,36 @@ const db = firebase.firestore();
 let AUTH_USER = null;         // usuario de Google actual (objeto de Firebase Auth) o null
 let AUTH_STATE = 'checking';  // 'checking' | 'signedout' | 'unauthorized' | 'ready'
 let AUTHORIZED_EMAILS = [];   // [{id:email, addedAt, addedBy}, ...] — lista blanca de accesos (Licenciada/reportes)
-let firestoreUnsubs = [];     // des-suscriptores de los listeners en vivo de Firestore
+let firestoreUnsubs = [];     // des-suscriptores de los listeners en vivo de Firestore (del área actual)
+let areasUnsub = null;        // des-suscriptor aparte para el listener de "areas" (no se corta al cambiar de área)
 
 /* Hay DOS tipos de acceso, independientes entre sí:
    1) authorized_emails — acceso completo (Panel Licenciada, ver a todos,
-      Resumen/reportes). Se administra en la pestaña "Accesos".
-   2) personal_emails — acceso directo de UNA persona del staff: su correo
-      de Google la lleva automáticamente a SU propia sección para registrar
-      SUS actividades, sin lista de selección y sin ver los datos de nadie
-      más ni el Panel Licenciada. Se administra en la pestaña "Personal". */
+      Resumen/reportes) a TODAS las áreas. Se administra en la pestaña "Accesos".
+   2) personal_emails — acceso directo de UNA persona del staff, de UNA
+      sola área: su correo de Google la lleva automáticamente a SU propia
+      sección para registrar SUS actividades, sin lista de selección, sin
+      selector de área y sin ver los datos de nadie más ni el Panel
+      Licenciada. Se administra en la pestaña "Personal", dentro de cada área. */
+
+/* ------------------------------- Áreas --------------------------------
+   Cada área (Medicina, Neumología, ...) es un espacio de trabajo
+   completamente independiente: su propio personal, pacientes, catálogo de
+   actividades, configuración y registros — como si fuera "otra app", pero
+   sirviéndose todas desde el mismo archivo. Solo la Licenciada (acceso
+   completo) elige entre áreas y puede crear nuevas; el acceso directo de
+   personal ya viene "fijado" a la suya (ver personal_emails.areaId). */
+let AREAS = [];              // [{id, nombre}, ...] — lista de áreas existentes
+let CURRENT_AREA = null;     // {id, nombre} del área en la que se está trabajando ahora mismo
+
+// Todo lo que antes era db.collection('personal'|'pacientes'|'registros'|'meta')
+// ahora vive DENTRO del área actual: areas/{CURRENT_AREA.id}/<nombre>. Esto
+// no es solo una etiqueta que se pueda olvidar filtrar -- es un aislamiento
+// real a nivel de ruta, que las reglas de seguridad de Firestore pueden
+// exigir de punta a punta (ver README).
+function areaCol(name){
+  return db.collection('areas').doc(CURRENT_AREA.id).collection(name);
+}
 
 /* ---------------------------- Utilidades ---------------------------- */
 function uid(prefix){ return (prefix||'id') + '_' + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
@@ -283,11 +314,11 @@ let STATE = {
 };
 
 function saveCatalogo(){
-  db.collection('meta').doc('catalogo').set({ categorias: STATE.catalogo })
+  areaCol('meta').doc('catalogo').set({ categorias: STATE.catalogo })
     .catch(e=>{ console.error(e); toast('Error guardando catálogo en la nube: '+e.message); });
 }
 function saveConfig(){
-  db.collection('meta').doc('config').set(STATE.config)
+  areaCol('meta').doc('config').set(STATE.config)
     .catch(e=>{ console.error(e); toast('Error guardando configuración en la nube: '+e.message); });
 }
 
@@ -324,20 +355,20 @@ function migrarCatalogoATiemposPorGrado(){
 // Si ya hay datos, esto no hace nada.
 async function seedFirestoreIfEmpty(){
   try{
-    const metaCat = await db.collection('meta').doc('catalogo').get();
-    if(!metaCat.exists) await db.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
-    const metaCfg = await db.collection('meta').doc('config').get();
-    if(!metaCfg.exists) await db.collection('meta').doc('config').set(defaultConfig());
-    const personalSnap = await db.collection('personal').limit(1).get();
+    const metaCat = await areaCol('meta').doc('catalogo').get();
+    if(!metaCat.exists) await areaCol('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+    const metaCfg = await areaCol('meta').doc('config').get();
+    if(!metaCfg.exists) await areaCol('meta').doc('config').set(defaultConfig());
+    const personalSnap = await areaCol('personal').limit(1).get();
     if(personalSnap.empty){
       const batch = db.batch();
-      PERSONAL_SEED.forEach(p=> batch.set(db.collection('personal').doc(p.id), p));
+      PERSONAL_SEED.forEach(p=> batch.set(areaCol('personal').doc(p.id), p));
       await batch.commit();
     }
-    const pacientesSnap = await db.collection('pacientes').limit(1).get();
+    const pacientesSnap = await areaCol('pacientes').limit(1).get();
     if(pacientesSnap.empty){
       const batch = db.batch();
-      PACIENTES_SEED.forEach(p=> batch.set(db.collection('pacientes').doc(p.id), p));
+      PACIENTES_SEED.forEach(p=> batch.set(areaCol('pacientes').doc(p.id), p));
       await batch.commit();
     }
   }catch(e){
@@ -345,31 +376,132 @@ async function seedFirestoreIfEmpty(){
   }
 }
 
+// Migración de un solo uso: la app nació con una sola área (UCI) usando
+// colecciones "sueltas" (personal/pacientes/registros/meta en la raíz).
+// Ahora cada área vive aparte, en areas/{id}/... . La primera vez que
+// alguien con acceso completo entra después de esta actualización, si la
+// colección "areas" está vacía, se crea:
+//   - "Medicina": con TODO lo que ya existía de antes (si había datos
+//     viejos, se copian tal cual; las colecciones viejas NO se borran, se
+//     quedan de respaldo sin usarse, por seguridad).
+//   - "Neumología": un área nueva y vacía de personal/pacientes/registros,
+//     pero con el MISMO catálogo de actividades que Medicina (por ahora
+//     son las mismas actividades en todas las áreas; cada una las puede
+//     editar por separado después, sin afectar a las demás).
+// Si "areas" ya tiene algo, esto no hace nada (para no duplicar al
+// volver a entrar).
+async function migrarAAreasSiHaceFalta(){
+  const areasSnap = await db.collection('areas').limit(1).get();
+  if(!areasSnap.empty) return;
+
+  async function copiarColeccionVieja(nombreVieja, nuevaRef){
+    const snap = await db.collection(nombreVieja).get();
+    const docs = snap.docs;
+    for(let i=0;i<docs.length;i+=400){
+      const batch = db.batch();
+      docs.slice(i,i+400).forEach(d=> batch.set(nuevaRef.collection(nombreVieja).doc(d.id), d.data()));
+      await batch.commit();
+    }
+  }
+
+  const medicinaRef = db.collection('areas').doc();
+  await medicinaRef.set({ nombre:'Medicina', creadoAt: Date.now() });
+
+  const [personalViejo, pacientesViejo, registrosViejo] = await Promise.all([
+    db.collection('personal').limit(1).get(),
+    db.collection('pacientes').limit(1).get(),
+    db.collection('registros').limit(1).get()
+  ]);
+  const huboDatosViejos = !personalViejo.empty || !pacientesViejo.empty || !registrosViejo.empty;
+
+  if(huboDatosViejos){
+    await copiarColeccionVieja('personal', medicinaRef);
+    await copiarColeccionVieja('pacientes', medicinaRef);
+    await copiarColeccionVieja('registros', medicinaRef);
+    const [catViejo, cfgViejo] = await Promise.all([
+      db.collection('meta').doc('catalogo').get(),
+      db.collection('meta').doc('config').get()
+    ]);
+    await medicinaRef.collection('meta').doc('catalogo').set(catViejo.exists ? catViejo.data() : { categorias: CATALOGO_SEED });
+    await medicinaRef.collection('meta').doc('config').set(cfgViejo.exists ? cfgViejo.data() : defaultConfig());
+  } else {
+    await medicinaRef.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+    await medicinaRef.collection('meta').doc('config').set(defaultConfig());
+    const batchP = db.batch();
+    PERSONAL_SEED.forEach(p=> batchP.set(medicinaRef.collection('personal').doc(p.id), p));
+    await batchP.commit();
+    const batchPac = db.batch();
+    PACIENTES_SEED.forEach(p=> batchPac.set(medicinaRef.collection('pacientes').doc(p.id), p));
+    await batchPac.commit();
+  }
+
+  const catalogoMedicina = (await medicinaRef.collection('meta').doc('catalogo').get()).data();
+  const configMedicina = (await medicinaRef.collection('meta').doc('config').get()).data();
+  const neumoRef = db.collection('areas').doc();
+  await neumoRef.set({ nombre:'Neumología', creadoAt: Date.now() });
+  await neumoRef.collection('meta').doc('catalogo').set(catalogoMedicina);
+  await neumoRef.collection('meta').doc('config').set(configMedicina);
+}
+
 function detachFirestoreListeners(){
   firestoreUnsubs.forEach(u=>{ try{ u(); }catch(e){} });
   firestoreUnsubs = [];
 }
 
+// El listener de "areas" es aparte de firestoreUnsubs: sigue vivo aunque
+// se cambie de área (para que la lista de áreas se mantenga actualizada
+// en la pantalla de selección), y solo se corta al cerrar sesión.
+function detachAreasListener(){
+  if(areasUnsub){ try{ areasUnsub(); }catch(e){} areasUnsub = null; }
+}
+function attachAreasListener(){
+  detachAreasListener();
+  areasUnsub = db.collection('areas').onSnapshot(snap=>{
+    AREAS = snap.docs.map(d=>({ id:d.id, ...d.data() })).sort((a,b)=> (a.nombre||'').localeCompare(b.nombre||''));
+    render();
+  }, e=>console.error('listener areas', e));
+}
+
+// Cambia de área sin cerrar sesión de Google: vuelve a la pantalla de
+// selección de área para que la Licenciada elija otra. Solo aplica a
+// cuentas de acceso completo -- el acceso directo de personal no tiene
+// este botón (ver updateTopbar).
+function cambiarArea(){
+  detachFirestoreListeners();
+  CURRENT_AREA = null;
+  SESSION = null;
+  draft = null;
+  draftEditId = null;
+  STATE = { personal: [], pacientes: [], catalogo: [], registros: [], config: defaultConfig() };
+  goto('seleccionArea');
+}
+
+function elegirArea(area){
+  CURRENT_AREA = area;
+  attachFirestoreListeners();
+  goto('login');
+}
+
 function attachFirestoreListeners(){
   detachFirestoreListeners();
-  firestoreUnsubs.push(db.collection('personal').onSnapshot(snap=>{
+  firestoreUnsubs.push(areaCol('personal').onSnapshot(snap=>{
     STATE.personal = snap.docs.map(d=>({ id:d.id, ...d.data() }));
     render();
   }, e=>console.error('listener personal', e)));
-  firestoreUnsubs.push(db.collection('pacientes').onSnapshot(snap=>{
+  firestoreUnsubs.push(areaCol('pacientes').onSnapshot(snap=>{
     STATE.pacientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
     render();
   }, e=>console.error('listener pacientes', e)));
-  firestoreUnsubs.push(db.collection('registros').onSnapshot(snap=>{
+  firestoreUnsubs.push(areaCol('registros').onSnapshot(snap=>{
     STATE.registros = snap.docs.map(d=>({ id:d.id, ...d.data() }));
     render();
   }, e=>console.error('listener registros', e)));
-  firestoreUnsubs.push(db.collection('meta').doc('catalogo').onSnapshot(doc=>{
+  firestoreUnsubs.push(areaCol('meta').doc('catalogo').onSnapshot(doc=>{
     if(doc.exists) STATE.catalogo = doc.data().categorias || [];
     migrarCatalogoATiemposPorGrado();
     render();
   }, e=>console.error('listener catalogo', e)));
-  firestoreUnsubs.push(db.collection('meta').doc('config').onSnapshot(doc=>{
+  firestoreUnsubs.push(areaCol('meta').doc('config').onSnapshot(doc=>{
     if(doc.exists) STATE.config = doc.data();
     render();
   }, e=>console.error('listener config', e)));
@@ -392,23 +524,23 @@ function attachFirestoreListeners(){
 // Firestore tampoco se lo permitirían a este tipo de acceso.
 function attachFirestoreListenersPersonal(personalId){
   detachFirestoreListeners();
-  firestoreUnsubs.push(db.collection('personal').doc(personalId).onSnapshot(doc=>{
+  firestoreUnsubs.push(areaCol('personal').doc(personalId).onSnapshot(doc=>{
     STATE.personal = doc.exists ? [{ id:doc.id, ...doc.data() }] : [];
     render();
   }, e=>console.error('listener personal (acceso directo)', e)));
-  firestoreUnsubs.push(db.collection('pacientes').onSnapshot(snap=>{
+  firestoreUnsubs.push(areaCol('pacientes').onSnapshot(snap=>{
     STATE.pacientes = snap.docs.map(d=>({ id:d.id, ...d.data() }));
     render();
   }, e=>console.error('listener pacientes (acceso directo)', e)));
-  firestoreUnsubs.push(db.collection('registros').where('personalId','==',personalId).onSnapshot(snap=>{
+  firestoreUnsubs.push(areaCol('registros').where('personalId','==',personalId).onSnapshot(snap=>{
     STATE.registros = snap.docs.map(d=>({ id:d.id, ...d.data() }));
     render();
   }, e=>console.error('listener registros (acceso directo)', e)));
-  firestoreUnsubs.push(db.collection('meta').doc('catalogo').onSnapshot(doc=>{
+  firestoreUnsubs.push(areaCol('meta').doc('catalogo').onSnapshot(doc=>{
     if(doc.exists) STATE.catalogo = doc.data().categorias || [];
     render();
   }, e=>console.error('listener catalogo (acceso directo)', e)));
-  firestoreUnsubs.push(db.collection('meta').doc('config').onSnapshot(doc=>{
+  firestoreUnsubs.push(areaCol('meta').doc('config').onSnapshot(doc=>{
     if(doc.exists) STATE.config = doc.data();
     render();
   }, e=>console.error('listener config (acceso directo)', e)));
@@ -442,6 +574,10 @@ function updateTopbar(){
   const badge = document.getElementById('userBadge');
   const name = document.getElementById('userBadgeName');
   const sub = document.getElementById('brandSub');
+  const title = document.getElementById('brandTitle');
+  const btnCambiarArea = document.getElementById('btnCambiarArea');
+  title.textContent = CURRENT_AREA ? ('PRODUCTIVIDAD ' + CURRENT_AREA.nombre.toUpperCase()) : 'PRODUCTIVIDAD';
+  document.title = CURRENT_AREA ? ('Productividad ' + CURRENT_AREA.nombre + ' - Enfermería') : 'Control de Productividad - Enfermería';
   if(!SESSION){
     badge.classList.add('hidden');
     sub.textContent = 'Registro de actividades de enfermería';
@@ -450,10 +586,12 @@ function updateTopbar(){
     badge.classList.remove('hidden');
     name.textContent = p ? (p.nombres+' '+p.apellidos) : '';
     sub.textContent = 'Mi turno';
+    if(btnCambiarArea) btnCambiarArea.classList.toggle('hidden', !!SESSION.restringido);
   } else {
     badge.classList.remove('hidden');
     name.textContent = 'Panel Licenciada';
     sub.textContent = 'Supervisión y reportes';
+    if(btnCambiarArea) btnCambiarArea.classList.remove('hidden');
   }
 }
 
@@ -470,6 +608,10 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
   draftEditId = null;
   goto('login');
 });
+document.getElementById('btnCambiarArea').addEventListener('click', ()=>{
+  if(!confirm('¿Cambiar de área? Vas a salir de "'+(CURRENT_AREA?CURRENT_AREA.nombre:'')+'" y elegir otra.')) return;
+  cambiarArea();
+});
 
 /* ------------------------------ Render -------------------------------- */
 function render(){
@@ -483,11 +625,13 @@ function render(){
     return;
   }
   updateTopbar();
-  if(VIEW === 'login') main.innerHTML = viewLogin();
+  if(VIEW === 'seleccionArea') main.innerHTML = viewSeleccionArea();
+  else if(VIEW === 'login') main.innerHTML = viewLogin();
   else if(VIEW === 'registro') main.innerHTML = viewRegistro();
   else if(VIEW === 'historial') main.innerHTML = viewHistorial();
   else if(VIEW === 'licDash') main.innerHTML = viewLicenciada();
   bindViewEvents();
+  if(VIEW === 'seleccionArea') bindSeleccionAreaEvents();
 }
 
 /* ============================ ACCESO (Google) ========================== */
@@ -512,7 +656,7 @@ function viewAuthGate(){
   <div class="login-wrap">
     <div class="card center">
       <div class="login-logo">🩺</div>
-      <h2>Productividad UCI</h2>
+      <h2>Productividad</h2>
       <p class="muted small">Inicia sesión con tu cuenta de Google para continuar. Solo los correos autorizados por la Licenciada pueden entrar.</p>
       <button class="btn btn-block" id="btnGoogleSignIn">Iniciar sesión con Google</button>
     </div>
@@ -529,6 +673,77 @@ function bindAuthGateEvents(){
   };
   const btnOut = document.getElementById('btnSignOut');
   if(btnOut) btnOut.onclick = ()=> auth.signOut();
+}
+
+/* ========================= SELECCIÓN DE ÁREA =========================
+   Solo la aterrizan las cuentas de acceso completo (authorized_emails):
+   el acceso directo de personal ya sabe a qué área pertenece (ver
+   personal_emails.areaId) y nunca pasa por esta pantalla. */
+function viewSeleccionArea(){
+  const cards = AREAS.map(a=>`
+    <button class="area-card" data-elegir-area="${a.id}">
+      <span class="area-card-icon">🏥</span>
+      <span class="area-card-nombre">${escapeHtml(a.nombre)}</span>
+    </button>`).join('');
+  return `
+  <div class="login-wrap">
+    <div class="card center">
+      <div class="login-logo">🏥</div>
+      <h2>¿Qué área?</h2>
+      <p class="muted small">Cada área tiene su propio personal, pacientes, catálogo y registros, totalmente independiente de las demás.</p>
+      <div class="area-grid">${cards || '<p class="muted small">Todavía no hay áreas creadas.</p>'}</div>
+      <div class="field" style="margin-top:14px; text-align:left;">
+        <label>+ Añadir área nueva</label>
+        <div class="form-row">
+          <input id="nuevaAreaNombre" placeholder="Ej: Cardiología" style="flex:1;">
+          <button class="btn" id="btnAddArea">Crear</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function bindSeleccionAreaEvents(){
+  document.querySelectorAll('[data-elegir-area]').forEach(el=>{
+    el.onclick = ()=>{
+      const area = AREAS.find(a=>a.id===el.getAttribute('data-elegir-area'));
+      if(area) elegirArea(area);
+    };
+  });
+  const btnAdd = document.getElementById('btnAddArea');
+  if(btnAdd){
+    btnAdd.onclick = async ()=>{
+      const inp = document.getElementById('nuevaAreaNombre');
+      const nombre = (inp.value||'').trim();
+      if(!nombre){ toast('Escribe un nombre para la nueva área'); return; }
+      btnAdd.disabled = true;
+      try{
+        // Por ahora todas las áreas manejan las mismas actividades: se
+        // copia el catálogo/configuración de la primera área existente,
+        // como plantilla inicial (después cada una se puede editar por
+        // separado, sin afectar a las demás).
+        const plantilla = AREAS[0];
+        const ref = db.collection('areas').doc();
+        await ref.set({ nombre, creadoAt: Date.now(), creadoPor: (AUTH_USER && AUTH_USER.email) || null });
+        if(plantilla){
+          const [catDoc, cfgDoc] = await Promise.all([
+            db.collection('areas').doc(plantilla.id).collection('meta').doc('catalogo').get(),
+            db.collection('areas').doc(plantilla.id).collection('meta').doc('config').get()
+          ]);
+          await ref.collection('meta').doc('catalogo').set(catDoc.exists ? catDoc.data() : { categorias: CATALOGO_SEED });
+          await ref.collection('meta').doc('config').set(cfgDoc.exists ? cfgDoc.data() : defaultConfig());
+        } else {
+          await ref.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+          await ref.collection('meta').doc('config').set(defaultConfig());
+        }
+        toast('Área "'+nombre+'" creada');
+        elegirArea({ id: ref.id, nombre });
+      }catch(e){
+        console.error(e);
+        toast('Error creando el área: '+e.message);
+      }
+      btnAdd.disabled = false;
+    };
+  }
 }
 
 /* ============================== LOGIN ================================ */
@@ -924,7 +1139,7 @@ function bindViewEvents(){
       };
       btnGuardar.disabled = true;
       try{
-        await db.collection('registros').doc(id).set(registro);
+        await areaCol('registros').doc(id).set(registro);
         draft = null;
         draftEditId = null;
         toast(editando ? 'Registro actualizado correctamente' : 'Turno guardado correctamente');
@@ -1476,9 +1691,10 @@ async function setPersonalEmail(personalId, emailRaw){
     if(oldEmail && oldEmail!==email) batch.delete(db.collection('personal_emails').doc(oldEmail));
     if(email) batch.set(db.collection('personal_emails').doc(email), {
       personalId, personalNombre: p.nombres+' '+p.apellidos,
+      areaId: CURRENT_AREA.id, areaNombre: CURRENT_AREA.nombre,
       addedAt: Date.now(), addedBy: (AUTH_USER && AUTH_USER.email) || '?'
     });
-    batch.update(db.collection('personal').doc(personalId), { email: email || null });
+    batch.update(areaCol('personal').doc(personalId), { email: email || null });
     await batch.commit();
     toast(email ? ('Acceso directo asignado a '+email) : 'Acceso directo retirado');
   }catch(e){ console.error(e); toast('Error: '+e.message); }
@@ -1666,7 +1882,7 @@ function bindLicenciadaEvents(){
   // Personal
   document.querySelectorAll('[data-toggle-activo]').forEach(el=>{
     el.onchange = ()=>{
-      db.collection('personal').doc(el.getAttribute('data-toggle-activo')).update({activo: el.checked})
+      areaCol('personal').doc(el.getAttribute('data-toggle-activo')).update({activo: el.checked})
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
@@ -1676,7 +1892,7 @@ function bindLicenciadaEvents(){
       const pid = el.getAttribute('data-del-personal');
       const p = STATE.personal.find(x=>x.id===pid);
       const batch = db.batch();
-      batch.delete(db.collection('personal').doc(pid));
+      batch.delete(areaCol('personal').doc(pid));
       if(p && p.email) batch.delete(db.collection('personal_emails').doc(p.email.toLowerCase()));
       batch.commit().catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
@@ -1689,7 +1905,7 @@ function bindLicenciadaEvents(){
       const cargo = document.getElementById('npCargo').value.trim();
       if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
       try{
-        await db.collection('personal').doc(uid('p')).set({nombres, apellidos, cargo, activo:true});
+        await areaCol('personal').doc(uid('p')).set({nombres, apellidos, cargo, activo:true});
         toast('Personal agregado');
       }catch(e){ console.error(e); toast('Error: '+e.message); }
     };
@@ -1712,28 +1928,28 @@ function bindLicenciadaEvents(){
   // Pacientes
   document.querySelectorAll('[data-edit-cama]').forEach(el=>{
     el.onchange = ()=>{
-      db.collection('pacientes').doc(el.getAttribute('data-edit-cama')).update({cama: el.value.trim()})
+      areaCol('pacientes').doc(el.getAttribute('data-edit-cama')).update({cama: el.value.trim()})
         .then(()=>toast('Cama actualizada'))
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-edit-grado]').forEach(el=>{
     el.onchange = ()=>{
-      db.collection('pacientes').doc(el.getAttribute('data-edit-grado')).update({grado: Number(el.value)})
+      areaCol('pacientes').doc(el.getAttribute('data-edit-grado')).update({grado: Number(el.value)})
         .then(()=>toast('Grado actualizado'))
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-toggle-activo-paciente]').forEach(el=>{
     el.onchange = ()=>{
-      db.collection('pacientes').doc(el.getAttribute('data-toggle-activo-paciente')).update({activo: el.checked})
+      areaCol('pacientes').doc(el.getAttribute('data-toggle-activo-paciente')).update({activo: el.checked})
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
   document.querySelectorAll('[data-del-paciente]').forEach(el=>{
     el.onclick = ()=>{
       if(!confirm('¿Eliminar este paciente? Los registros históricos que lo mencionan se conservarán.')) return;
-      db.collection('pacientes').doc(el.getAttribute('data-del-paciente')).delete()
+      areaCol('pacientes').doc(el.getAttribute('data-del-paciente')).delete()
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
   });
@@ -1746,7 +1962,7 @@ function bindLicenciadaEvents(){
       const grado = Number(document.getElementById('npacGrado').value);
       if(!nombres || !apellidos){ toast('Completa nombres y apellidos'); return; }
       try{
-        await db.collection('pacientes').doc(uid('pac')).set({nombres, apellidos, cama, grado, fechaIngreso:todayISO(), fechaAlta:'', activo:true});
+        await areaCol('pacientes').doc(uid('pac')).set({nombres, apellidos, cama, grado, fechaIngreso:todayISO(), fechaAlta:'', activo:true});
         toast('Paciente registrado');
       }catch(e){ console.error(e); toast('Error: '+e.message); }
     };
@@ -1886,31 +2102,31 @@ async function mergeIntoFirestore(incoming){
   if(Array.isArray(incoming.registros)){
     const existingIds = new Set(STATE.registros.map(r=>r.id));
     incoming.registros.forEach(r=>{
-      if(!existingIds.has(r.id)){ const {id, ...rest} = r; batch.set(db.collection('registros').doc(r.id), rest); count++; }
+      if(!existingIds.has(r.id)){ const {id, ...rest} = r; batch.set(areaCol('registros').doc(r.id), rest); count++; }
     });
   }
   if(Array.isArray(incoming.personal)){
     const existingIds = new Set(STATE.personal.map(p=>p.id));
     incoming.personal.forEach(p=>{
-      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(db.collection('personal').doc(p.id), rest); count++; }
+      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(areaCol('personal').doc(p.id), rest); count++; }
     });
   }
   if(Array.isArray(incoming.pacientes)){
     const existingIds = new Set(STATE.pacientes.map(p=>p.id));
     incoming.pacientes.forEach(p=>{
-      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(db.collection('pacientes').doc(p.id), rest); count++; }
+      if(!existingIds.has(p.id)){ const {id, ...rest} = p; batch.set(areaCol('pacientes').doc(p.id), rest); count++; }
     });
   }
   if(count>0) await batch.commit();
   return count;
 }
 
-// Borra todo el contenido compartido en Firestore (registros/personal/
-// pacientes) y reinicia catálogo y configuración a los valores por
-// defecto. No toca authorized_emails (el control de acceso no se borra).
+// Borra todo el contenido de la ÁREA ACTUAL (registros/personal/
+// pacientes) y reinicia su catálogo y configuración a los valores por
+// defecto. No toca otras áreas, ni authorized_emails (el control de
+// acceso no se borra nunca desde acá).
 async function wipeFirestoreData(){
-  async function wipeCollection(name){
-    const snap = await db.collection(name).get();
+  async function wipeQuerySnap(snap){
     const docs = snap.docs;
     for(let i=0;i<docs.length;i+=450){
       const batch = db.batch();
@@ -1918,13 +2134,15 @@ async function wipeFirestoreData(){
       await batch.commit();
     }
   }
-  await wipeCollection('registros');
-  await wipeCollection('personal');
-  await wipeCollection('personal_emails'); // los accesos directos apuntaban a personal que ya no existe
-  await wipeCollection('pacientes');
-  await db.collection('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
-  await db.collection('meta').doc('config').set(defaultConfig());
-  await seedFirestoreIfEmpty();
+  await wipeQuerySnap(await areaCol('registros').get());
+  await wipeQuerySnap(await areaCol('personal').get());
+  await wipeQuerySnap(await areaCol('pacientes').get());
+  // Los accesos directos de personal que apuntaban a ESTA área ya no
+  // sirven (el personal al que apuntaban se borró) -- se limpian, sin
+  // tocar los accesos directos de otras áreas.
+  await wipeQuerySnap(await db.collection('personal_emails').where('areaId','==',CURRENT_AREA.id).get());
+  await areaCol('meta').doc('catalogo').set({ categorias: CATALOGO_SEED });
+  await areaCol('meta').doc('config').set(defaultConfig());
 }
 
 /* ------------------------------ Exportar CSV ------------------------------ */
@@ -1973,6 +2191,12 @@ function xlsTotalStyle(){
 function xlsDataStyle(){
   return { border: XLS_BORDER_ALL };
 }
+// La primera columna suele llevar las etiquetas largas ("Función
+// Asistencial": grado + categoría + actividad); con ajuste de texto para
+// que no se corten cuando la columna no alcanza a mostrarlas completas.
+function xlsLabelColStyle(){
+  return { border: XLS_BORDER_ALL, alignment:{ wrapText:true, vertical:'top' } };
+}
 
 // Aplica cuadrícula + encabezado de color + fila/columna de "Total
 // general" resaltada a una hoja creada con aoa_to_sheet, para que se vea
@@ -1988,6 +2212,7 @@ function styleSheetLikeExcel(ws, numRows, numCols, {totalRow=false, totalCol=fal
       const isTotalCol = totalCol && c===numCols-1;
       if(isHeader) ws[addr].s = xlsHeaderStyle();
       else if(isTotalRow || isTotalCol) ws[addr].s = xlsTotalStyle();
+      else if(c===0) ws[addr].s = xlsLabelColStyle();
       else ws[addr].s = xlsDataStyle();
     }
   }
@@ -1999,7 +2224,11 @@ function styleSheetLikeExcel(ws, numRows, numCols, {totalRow=false, totalCol=fal
       const val = ws[addr] ? String(ws[addr].v==null?'':ws[addr].v) : '';
       maxLen = Math.max(maxLen, val.length);
     }
-    cols.push({ wch: Math.min(maxLen+2, 42) });
+    // La columna de etiquetas (0) puede ser bastante más ancha (las
+    // "Función Asistencial" son largas); el resto se limita a 42 para no
+    // hacer la hoja gigante con nombres de columna cortos.
+    const cap = c===0 ? 60 : 42;
+    cols.push({ wch: Math.min(maxLen+2, cap) });
   }
   ws['!cols'] = cols;
   ws['!rows'] = [{ hpt:20 }];
@@ -2126,7 +2355,10 @@ auth.onAuthStateChanged(async (user)=>{
   if(!user){
     AUTH_STATE = 'signedout';
     AUTHORIZED_EMAILS = [];
+    AREAS = [];
+    CURRENT_AREA = null;
     detachFirestoreListeners();
+    detachAreasListener();
     SESSION = null;
     render();
     return;
@@ -2137,18 +2369,20 @@ auth.onAuthStateChanged(async (user)=>{
     const email = (user.email||'').toLowerCase();
     const doc = await db.collection('authorized_emails').doc(email).get();
     if(doc.exists){
+      await migrarAAreasSiHaceFalta();
       AUTH_STATE = 'ready';
-      await seedFirestoreIfEmpty();
-      attachFirestoreListeners();
-      goto('login');
+      attachAreasListener();
+      goto('seleccionArea');
       return;
     }
     // No tiene el acceso "completo" (Licenciada/reportes). ¿Es un acceso
-    // directo de personal (correo vinculado a una sola persona)?
+    // directo de personal (correo vinculado a una sola persona, de UNA
+    // sola área)?
     const mapDoc = await db.collection('personal_emails').doc(email).get();
     if(mapDoc.exists){
-      const { personalId } = mapDoc.data();
+      const { personalId, areaId, areaNombre } = mapDoc.data();
       AUTH_STATE = 'ready';
+      CURRENT_AREA = { id: areaId, nombre: areaNombre || '' };
       SESSION = { tipo:'enfermero', personalId, restringido:true };
       draft = null;
       draftEditId = null;
