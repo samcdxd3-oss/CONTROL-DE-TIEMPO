@@ -917,14 +917,17 @@ function viewHistorial(){
       <td>${r.turno==='GD'?'Diurno':'Nocturno'}</td>
       <td>${minToHM(r.totalMin)}</td>
       <td><span class="chip ${chip}">${Math.round(pct*100)}%</span></td>
-      <td><button class="btn btn-outline btn-sm" data-editar-registro="${r.id}">✏️ Editar</button></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline btn-sm" data-editar-registro="${r.id}">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" data-eliminar-registro="${r.id}">🗑️ Eliminar</button>
+      </td>
     </tr>`;
   }).join('');
   return `
   <div class="card">
     <button class="link-btn" id="btnBackRegistro">← Volver al registro actual</button>
     <h2>Mis registros — ${escapeHtml(p?p.nombres+' '+p.apellidos:'')}</h2>
-    <p class="muted small">Toca una fila para ver el detalle de actividades. Si te confundiste al registrar algo, usa "Editar" para corregir ese turno.</p>
+    <p class="muted small">Toca una fila para ver el detalle de actividades. Si te confundiste al registrar algo, usa "Editar" para corregir ese turno, o "Eliminar" para borrarlo por completo (también desaparece del Resumen de la Licenciada, ya que es el mismo dato).</p>
     ${mine.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Turno</th><th>Total</th><th>%</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : `<div class="empty-state"><div class="ico">🗂️</div>Todavía no tienes turnos guardados.</div>`}
   </div>
@@ -1299,6 +1302,16 @@ function bindViewEvents(){
       iniciarEdicionRegistro(el.getAttribute('data-editar-registro'));
     };
   });
+  document.querySelectorAll('[data-eliminar-registro]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      if(!confirm('¿Eliminar este turno por completo? No se puede deshacer.')) return;
+      const id = el.getAttribute('data-eliminar-registro');
+      areaCol('registros').doc(id).delete()
+        .then(()=>toast('Turno eliminado'))
+        .catch(err=>{ console.error(err); toast('Error: '+err.message); });
+    };
+  });
 
   bindLicenciadaEvents();
 }
@@ -1327,6 +1340,11 @@ function showRegistroDetalle(items, targetId, titulo){
 let licTab = 'resumen';
 let licFiltro = { desde: null, hasta: null, turno: 'todos', personalId: 'todos' };
 let licDetalleAbierto = null; // key of open group/patient detail
+// Selección de turnos (checks) en "Resumen por turno", para poder borrar
+// solo esos registros puntuales -- sin tener que usar "Borrar todos los
+// datos" (que además se lleva personal, pacientes y catálogo). Guarda las
+// keys (personalId|fecha|turno) marcadas por la Licenciada.
+let licSeleccionRegistros = new Set();
 
 function firstDayOfMonthISO(){
   const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-01';
@@ -1358,11 +1376,16 @@ function buildResumenGroups(){
     if(!groups[key]){
       groups[key] = {
         key, personalId:r.personalId, personalNombre:r.personalNombre, fecha:r.fecha, turno:r.turno,
-        totalMin:0, porPaciente:{}
+        totalMin:0, porPaciente:{}, ids:[]
       };
     }
     const g = groups[key];
     g.totalMin += r.totalMin;
+    // ids: los documentos reales de "registros" detrás de esta fila -- lo
+    // normal es que sea uno solo (guardar un turno actualiza el mismo doc,
+    // no lo duplica), pero si por algún motivo hubiera más de uno con la
+    // misma persona+fecha+turno, se borran todos juntos al eliminar la fila.
+    g.ids.push(r.id);
     r.items.forEach(it=>{
       const pid = it.pacienteId || '__general__';
       const pname = it.pacienteNombre || 'Actividades generales / administrativas';
@@ -1452,6 +1475,12 @@ function licResumen(){
   const groups = buildResumenGroups();
   const { enriched, excesoTurnos, excesoMinTotal, totalMinGD, totalMinGN } = resumenStats(groups);
 
+  // Si cambió el filtro (u otra cosa) y algún turno marcado ya no está
+  // visible, se descarta la marca -- para no arriesgarse a borrar algo
+  // que ya no se está viendo en pantalla.
+  const keysVisibles = new Set(enriched.map(g=>g.key));
+  Array.from(licSeleccionRegistros).forEach(k=>{ if(!keysVisibles.has(k)) licSeleccionRegistros.delete(k); });
+
   // Se agrupa primero por PERSONA (no por turno suelto): así, si un
   // enfermero/a guarda su turno en varios momentos separados, o trabaja
   // más de un turno el mismo día, todo queda acumulado bajo su nombre en
@@ -1478,8 +1507,8 @@ function licResumen(){
         </tr>`;
       }).join('');
       return `<tr class="clickable" data-lic-detalle-grupo="${g.key}">
-        <td></td>
-        <td style="padding-left:16px;">${fmtFechaLarga(g.fecha)}</td>
+        <td style="padding-left:16px;"><input type="checkbox" data-check-registro-grupo="${g.key}" ${licSeleccionRegistros.has(g.key)?'checked':''}></td>
+        <td>${fmtFechaLarga(g.fecha)}</td>
         <td>${g.turno==='GD'?'Diurno':'Nocturno'}</td>
         <td><b>${minToHM(g.totalMin)}</b></td>
         <td>${g.horasEstandar}h</td>
@@ -1512,6 +1541,14 @@ function licResumen(){
       </div>
     </div>
     <p class="muted small">Cada <b>fila resaltada</b> es un enfermero/a, con el total acumulado de <b>todo el periodo filtrado</b> (sin importar cuántas veces guardó, ni si lo hizo en momentos distintos). Debajo se despliegan sus turnos (fecha + Diurno/Nocturno) y, dentro de cada uno, el desglose por paciente atendido (↳). Toca cualquier fila de turno o paciente para ver el detalle de actividades.</p>
+    <p class="muted small">Marca con el check los turnos que quieras borrar (por ejemplo, datos de prueba) y usa "Eliminar turnos marcados". Esto <b>solo borra esos registros de actividades</b> — no toca al personal, los pacientes, el catálogo ni los accesos de nadie.</p>
+    <div class="form-row" style="margin-bottom:10px;">
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;">
+        <input type="checkbox" id="chkSelAllResumen" ${enriched.length && enriched.every(g=>licSeleccionRegistros.has(g.key)) ? 'checked' : ''}>
+        Marcar todos los turnos visibles (${enriched.length})
+      </label>
+      <button class="btn btn-danger btn-sm" id="btnEliminarSeleccionResumen" ${licSeleccionRegistros.size ? '' : 'disabled'}>🗑️ Eliminar turnos marcados (${licSeleccionRegistros.size})</button>
+    </div>
     <div class="table-wrap"><table><thead><tr><th>Personal</th><th>Fecha</th><th>Turno</th><th>Total</th><th>Turno estándar</th><th>Estado</th></tr></thead><tbody>${tableRows}</tbody></table></div>
   </div>
   <div id="licDetalleBox"></div>
@@ -1997,6 +2034,51 @@ function bindLicenciadaEvents(){
       showRegistroDetalle(pp.items, 'licDetalleBox', g.personalNombre+' — '+fmtFechaLarga(g.fecha)+' ('+(g.turno==='GD'?'Diurno':'Nocturno')+') — '+pp.pacienteNombre);
     };
   });
+
+  // Selección de turnos a borrar (checks) en Resumen -- borra SOLO esos
+  // registros de actividades, sin tocar personal, pacientes, catálogo ni
+  // accesos (a diferencia de "Borrar todos los datos" en Configuración).
+  document.querySelectorAll('[data-check-registro-grupo]').forEach(el=>{
+    el.onclick = (e)=> e.stopPropagation();
+    el.onchange = (e)=>{
+      e.stopPropagation();
+      const key = el.getAttribute('data-check-registro-grupo');
+      if(el.checked) licSeleccionRegistros.add(key); else licSeleccionRegistros.delete(key);
+      render();
+    };
+  });
+  const chkSelAll = document.getElementById('chkSelAllResumen');
+  if(chkSelAll){
+    chkSelAll.onchange = ()=>{
+      const groups = buildResumenGroups();
+      if(chkSelAll.checked) groups.forEach(g=>licSeleccionRegistros.add(g.key));
+      else groups.forEach(g=>licSeleccionRegistros.delete(g.key));
+      render();
+    };
+  }
+  const btnEliminarSeleccionResumen = document.getElementById('btnEliminarSeleccionResumen');
+  if(btnEliminarSeleccionResumen){
+    btnEliminarSeleccionResumen.onclick = async ()=>{
+      const n = licSeleccionRegistros.size;
+      if(!n) return;
+      if(!confirm('¿Eliminar '+n+' turno'+(n===1?'':'s')+' marcado'+(n===1?'':'s')+'? Se borran esos registros de actividades para siempre (no se puede deshacer). El personal, los pacientes, el catálogo y los accesos NO se tocan.')) return;
+      btnEliminarSeleccionResumen.disabled = true;
+      try{
+        const groups = buildResumenGroups();
+        const ids = groups.filter(g=>licSeleccionRegistros.has(g.key)).flatMap(g=>g.ids);
+        for(let i=0;i<ids.length;i+=450){
+          const batch = db.batch();
+          ids.slice(i,i+450).forEach(id=>batch.delete(areaCol('registros').doc(id)));
+          await batch.commit();
+        }
+        licSeleccionRegistros.clear();
+        toast(n+' turno'+(n===1?'':'s')+' eliminado'+(n===1?'':'s'));
+      }catch(e){
+        console.error(e); toast('Error: '+e.message);
+      }
+      btnEliminarSeleccionResumen.disabled = false;
+    };
+  }
 
   const btnCsvDet = document.getElementById('btnExportCsvDetalle');
   if(btnCsvDet) btnCsvDet.onclick = exportCsvDetalle;
