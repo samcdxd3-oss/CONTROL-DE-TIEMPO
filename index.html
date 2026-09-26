@@ -1063,6 +1063,12 @@ function renderModal(){
       modalState.pacienteId = pid || null;
       modalState.actividad = null;
       modalState.cantidad = 1;
+      // El grado arranca en el que ya tiene fijado el paciente (Pacientes),
+      // como valor predeterminado -- pero sigue siendo elegible: el
+      // personal puede tocar Grado 1/2/3 y cambiarlo para esta actividad
+      // en particular, sin que eso afecte el grado guardado del paciente.
+      const pacienteSel = pid ? STATE.pacientes.find(p=>p.id===pid) : null;
+      modalState.grado = (pacienteSel && pacienteSel.grado) ? ('grado'+pacienteSel.grado) : 'grado1';
       modalState.step = 'actividad';
       renderModal();
     };
