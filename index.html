@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Control de Productividad - Enfermería</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563a8">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Productividad">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 
 :root{
@@ -221,6 +231,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Registro del service worker: no cachea nada (la app siempre necesita
+// conexión para hablar con Firestore), pero es lo que hace falta para
+// que el navegador ofrezca "Agregar a pantalla de inicio" / "Instalar
+// app" en el celular, junto con manifest.json y los íconos. Se salta a
+// propósito en file:// (así no rompe nada al correr las pruebas locales
+// con Playwright, que abren index_mocktest.html directo desde disco).
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('No se pudo registrar el service worker:', e));
+  });
+}
 
 let AUTH_USER = null;         // usuario de Google actual (objeto de Firebase Auth) o null
 let AUTH_STATE = 'checking';  // 'checking' | 'signedout' | 'unauthorized' | 'ready'
@@ -2612,3 +2634,4 @@ auth.onAuthStateChanged(async (user)=>{
 </script>
 </body>
 </html>
+
