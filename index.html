@@ -699,6 +699,7 @@ function viewSeleccionArea(){
           <button class="btn" id="btnAddArea">Crear</button>
         </div>
       </div>
+      <button class="link-btn" id="btnSalirSeleccionArea" style="margin-top:14px;">← Salir</button>
     </div>
   </div>`;
 }
@@ -709,6 +710,14 @@ function bindSeleccionAreaEvents(){
       if(area) elegirArea(area);
     };
   });
+  const btnSalir = document.getElementById('btnSalirSeleccionArea');
+  if(btnSalir){
+    // No hay ninguna pantalla anterior a la que "volver" desde acá -- este
+    // es lo primero que se ve tras iniciar sesión con Google. La única
+    // salida posible de verdad es cerrar sesión, para permitir que otra
+    // cuenta inicie sesión (o simplemente salir de la app).
+    btnSalir.onclick = ()=> auth.signOut();
+  }
   const btnAdd = document.getElementById('btnAddArea');
   if(btnAdd){
     btnAdd.onclick = async ()=>{
@@ -905,15 +914,18 @@ function viewHistorial(){
 }
 
 /* --------------------------- Modal: agregar actividad --------------------------- */
-// modalState.step: 'actividad' | 'paciente' | 'cantidad'
+// modalState.step: 'paciente' | 'actividad' | 'cantidad' (en ese orden: primero
+// se elige a quién, para tener claro qué actividades corresponden, y recién
+// después qué actividad y cuántas veces).
 // El grado (1/2/3) se elige de forma independiente al paciente -- igual que
 // en el Excel original, donde el grado era un dato de la actividad (cuántos
 // pacientes de ese grado la recibieron), y el paciente era solo un registro
-// aparte (nombre/cama/fechas) sin grado asociado.
-let modalState = { open:false, step:'actividad', categoriaId:null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
+// aparte (nombre/cama/fechas) sin grado asociado. Elegir primero al paciente
+// NO ata su grado fijo de la lista de Pacientes al de la actividad.
+let modalState = { open:false, step:'paciente', categoriaId:null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
 
 function openAddModal(){
-  modalState = { open:true, step:'actividad', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
+  modalState = { open:true, step:'paciente', categoriaId: STATE.catalogo[0] ? STATE.catalogo[0].id : null, query:'', actividad:null, grado:'grado1', pacienteId:undefined, cantidad:1 };
   renderModal();
 }
 function closeModal(){
@@ -925,7 +937,26 @@ function renderModal(){
   const root = document.getElementById('modalRoot');
   if(!modalState.open){ root.innerHTML=''; return; }
 
-  if(modalState.step === 'actividad'){
+  if(modalState.step === 'paciente'){
+    const activos = pacientesActivos();
+    const list = activos.map(p=>`
+      <div class="act-item clickable" data-pick-paciente="${p.id}">
+        <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)):''}</div></div>
+        <div class="muted">›</div>
+      </div>`).join('');
+    const sinPacienteOpt = `<div class="act-item clickable" data-pick-paciente="">
+        <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente en particular</div></div>
+        <div class="muted">›</div>
+      </div>`;
+    root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-head"><h3>¿A qué paciente?</h3><button class="close-x" id="modalClose">×</button></div>
+        <p class="muted small">Primero elige el paciente (o "Sin paciente / actividad general" si no aplica a uno en particular); después eliges qué actividad le hiciste.</p>
+        <div class="act-list">${sinPacienteOpt}${list}</div>
+      </div>
+    </div>`;
+  } else if(modalState.step === 'actividad'){
     const cats = STATE.catalogo;
     const chipbar = cats.map(c=>`<button class="chip-cat ${c.id===modalState.categoriaId?'active':''}" data-cat="${c.id}">${escapeHtml(c.nombre)}</button>`).join('');
     let acts = [];
@@ -953,35 +984,19 @@ function renderModal(){
       </div>`;
     }).join('') || `<div class="empty-state small">Sin resultados.</div>`;
 
+    const pacienteSel = modalState.pacienteId ? STATE.pacientes.find(p=>p.id===modalState.pacienteId) : null;
+    const pacienteTxt = modalState.pacienteId===null ? 'Sin paciente / actividad general' : (pacienteSel ? (pacienteSel.nombres+' '+pacienteSel.apellidos) : '');
+
     root.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal">
         <div class="modal-head"><h3>Agregar actividad</h3><button class="close-x" id="modalClose">×</button></div>
+        <p class="muted small">${pacienteTxt ? ('🧑‍🦱 '+escapeHtml(pacienteTxt)) : ''}</p>
         ${gradoBtns}
         <input class="search-box" id="modalSearch" placeholder="Buscar actividad..." value="${escapeHtml(modalState.query)}">
         ${modalState.query.trim() ? '' : `<div class="chipbar">${chipbar}</div>`}
         <div class="act-list">${list}</div>
-      </div>
-    </div>`;
-  } else if(modalState.step === 'paciente'){
-    const a = modalState.actividad;
-    const activos = pacientesActivos();
-    const list = activos.map(p=>`
-      <div class="act-item clickable" data-pick-paciente="${p.id}">
-        <div><div class="an">${escapeHtml(p.nombres+' '+p.apellidos)}</div><div class="at">${p.cama?('Cama '+escapeHtml(p.cama)):''}</div></div>
-        <div class="muted">›</div>
-      </div>`).join('');
-    const sinPacienteOpt = `<div class="act-item clickable" data-pick-paciente="">
-        <div><div class="an">Sin paciente / actividad general</div><div class="at">Para tareas administrativas u otras no ligadas a un paciente en particular</div></div>
-        <div class="muted">›</div>
-      </div>`;
-    root.innerHTML = `
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal">
-        <div class="modal-head"><h3>${escapeHtml(a.nombre)}</h3><button class="close-x" id="modalClose">×</button></div>
-        <p class="muted small">¿A qué paciente se la hiciste? (opcional, solo para el registro — el tiempo ya quedó fijado según el grado que elegiste)</p>
-        <div class="act-list">${sinPacienteOpt}${list}</div>
-        <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnBackToList">← Elegir otra actividad</button>
+        <button class="btn btn-outline btn-block" style="margin-top:10px;" id="btnBackToPacienteFromActividad">← Cambiar paciente</button>
       </div>
     </div>`;
   } else if(modalState.step === 'cantidad'){
@@ -1009,7 +1024,7 @@ function renderModal(){
           <div class="t-value">${subtotal!=null ? subtotal+' min' : '—'}</div>
         </div>
         <button class="btn btn-block" style="margin-top:14px;" id="btnConfirmAdd">Agregar al turno</button>
-        <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnBackToPaciente">← Atrás</button>
+        <button class="btn btn-outline btn-block" style="margin-top:8px;" id="btnBackToActividadFromCantidad">← Cambiar actividad</button>
       </div>
     </div>`;
   }
@@ -1037,8 +1052,8 @@ function renderModal(){
       const cat = STATE.catalogo.find(c=>c.id===catId);
       const act = cat.actividades.find(x=>x.id===actId);
       modalState.actividad = {...act, categoriaId:cat.id, categoriaNombre:cat.nombre};
-      modalState.pacienteId = undefined; modalState.cantidad = 1;
-      modalState.step = 'paciente';
+      modalState.cantidad = 1;
+      modalState.step = 'cantidad';
       renderModal();
     };
   });
@@ -1046,14 +1061,16 @@ function renderModal(){
     el.onclick = ()=>{
       const pid = el.getAttribute('data-pick-paciente');
       modalState.pacienteId = pid || null;
-      modalState.step = 'cantidad';
+      modalState.actividad = null;
+      modalState.cantidad = 1;
+      modalState.step = 'actividad';
       renderModal();
     };
   });
-  const backToList = document.getElementById('btnBackToList');
-  if(backToList) backToList.onclick = ()=>{ modalState.actividad=null; modalState.step='actividad'; renderModal(); };
-  const backToPaciente = document.getElementById('btnBackToPaciente');
-  if(backToPaciente) backToPaciente.onclick = ()=>{ modalState.step='paciente'; renderModal(); };
+  const backToPacienteFromActividad = document.getElementById('btnBackToPacienteFromActividad');
+  if(backToPacienteFromActividad) backToPacienteFromActividad.onclick = ()=>{ modalState.step='paciente'; renderModal(); };
+  const backToActividad = document.getElementById('btnBackToActividadFromCantidad');
+  if(backToActividad) backToActividad.onclick = ()=>{ modalState.step='actividad'; renderModal(); };
 
   const qtyInput = document.getElementById('qtyInput');
   if(qtyInput){
