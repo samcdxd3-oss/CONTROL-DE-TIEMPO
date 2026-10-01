@@ -2597,10 +2597,22 @@ auth.onAuthStateChanged(async (user)=>{
   }
   AUTH_STATE = 'checking';
   render();
+  const email = (user.email||'').toLowerCase();
   try{
-    const email = (user.email||'').toLowerCase();
-    const doc = await db.collection('authorized_emails').doc(email).get();
-    if(doc.exists){
+    // Ojo: este primer intento puede fallar con "permission-denied" para
+    // alguien con acceso directo de personal (nunca está en
+    // authorized_emails, así que las reglas de Firestore le niegan incluso
+    // consultar su propia ausencia ahí) -- por eso va en SU PROPIO
+    // try/catch, para no cortar la verificación antes de llegar a revisar
+    // personal_emails, que es donde sí puede estar.
+    let esCompleto = false;
+    try{
+      const doc = await db.collection('authorized_emails').doc(email).get();
+      esCompleto = doc.exists;
+    }catch(e){
+      console.warn('No se pudo consultar authorized_emails (normal si es acceso directo de personal):', e);
+    }
+    if(esCompleto){
       await migrarAAreasSiHaceFalta();
       AUTH_STATE = 'ready';
       attachAreasListener();
