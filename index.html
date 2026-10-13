@@ -197,6 +197,7 @@ hr.sep{border:none; border-top:1px solid var(--border); margin:14px 0;}
 </header>
 <main id="main"></main>
 <div id="modalRoot"></div>
+<div id="confirmRoot"></div>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
@@ -314,6 +315,34 @@ function toast(msg){
   t.classList.add('show');
   clearTimeout(toast._h);
   toast._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+// Reemplazo del confirm() nativo del navegador (esa burbuja gris fea que
+// no se parece en nada al resto de la app) por una burbuja propia, con el
+// mismo estilo que el modal de "Agregar actividad". Se usa con await:
+//   if(!(await showConfirm('¿Eliminar esto?'))) return;
+// opts.danger:true pinta el botón de confirmar en rojo (acciones
+// destructivas); opts.okText cambia el texto del botón de confirmar.
+function showConfirm(message, opts){
+  opts = opts || {};
+  return new Promise(resolve=>{
+    const root = document.getElementById('confirmRoot');
+    root.innerHTML = `
+    <div class="modal-overlay" id="confirmOverlay">
+      <div class="modal" style="max-width:380px;">
+        <p style="margin:4px 0 0; white-space:pre-line;">${escapeHtml(message)}</p>
+        <div class="form-row" style="margin-top:16px; justify-content:flex-end;">
+          <button class="btn btn-outline" id="confirmCancelBtn">${escapeHtml(opts.cancelText || 'Cancelar')}</button>
+          <button class="btn ${opts.danger ? 'btn-danger' : ''}" id="confirmOkBtn">${escapeHtml(opts.okText || 'Aceptar')}</button>
+        </div>
+      </div>
+    </div>`;
+    const cleanup = (result)=>{ root.innerHTML = ''; resolve(result); };
+    document.getElementById('confirmCancelBtn').onclick = ()=>cleanup(false);
+    document.getElementById('confirmOkBtn').onclick = ()=>cleanup(true);
+    document.getElementById('confirmOverlay').addEventListener('click', (e)=>{
+      if(e.target.id==='confirmOverlay') cleanup(false);
+    });
+  });
 }
 function csvEscape(v){
   v = String(v==null?'':v);
@@ -649,8 +678,8 @@ document.getElementById('btnLogout').addEventListener('click', ()=>{
   draftEditId = null;
   goto('login');
 });
-document.getElementById('btnCambiarArea').addEventListener('click', ()=>{
-  if(!confirm('¿Cambiar de área? Vas a salir de "'+(CURRENT_AREA?CURRENT_AREA.nombre:'')+'" y elegir otra.')) return;
+document.getElementById('btnCambiarArea').addEventListener('click', async ()=>{
+  if(!(await showConfirm('¿Cambiar de área? Vas a salir de "'+(CURRENT_AREA?CURRENT_AREA.nombre:'')+'" y elegir otra.'))) return;
   cambiarArea();
 });
 
@@ -814,6 +843,9 @@ function viewLogin(){
     </div>
     <div class="center">
       <button class="link-btn" id="btnGoLic">Soy la Licenciada / Supervisora →</button>
+    </div>
+    <div class="center">
+      <button class="link-btn" id="btnVolverAreasLogin">← Volver a elegir área</button>
     </div>
   </div>`;
 }
@@ -1161,9 +1193,9 @@ function renderModal(){
   // del personal puede quitarlo de la lista cuando el paciente se va de
   // alta (los registros históricos que ya lo mencionan se conservan).
   document.querySelectorAll('[data-del-paciente-modal]').forEach(el=>{
-    el.onclick = (e)=>{
+    el.onclick = async (e)=>{
       e.stopPropagation();
-      if(!confirm('¿Eliminar este paciente de la lista? Los registros históricos que lo mencionan se conservarán.')) return;
+      if(!(await showConfirm('¿Eliminar este paciente de la lista? Los registros históricos que lo mencionan se conservarán.', {danger:true, okText:'Eliminar'}))) return;
       areaCol('pacientes').doc(el.getAttribute('data-del-paciente-modal')).delete()
         .catch(err=>{ console.error(err); toast('Error: '+err.message); });
     };
@@ -1258,6 +1290,13 @@ function bindViewEvents(){
   }
   const btnGoLic = document.getElementById('btnGoLic');
   if(btnGoLic) btnGoLic.onclick = ()=>{ SESSION = { tipo:'licenciada' }; goto('licDash'); };
+  const btnVolverAreasLogin = document.getElementById('btnVolverAreasLogin');
+  // Esta pantalla ("Ingreso de personal") solo la ve una cuenta de acceso
+  // completo (ver comentario junto a viewSeleccionArea) -- el acceso
+  // directo de personal nunca pasa por aquí -- así que siempre es seguro
+  // volver al selector de áreas desde este botón, sin pedir confirmación
+  // (todavía no se eligió ningún nombre ni se perdió ningún dato).
+  if(btnVolverAreasLogin) btnVolverAreasLogin.onclick = ()=> cambiarArea();
 
   // Registro
   const draftFecha = document.getElementById('draftFecha');
@@ -1325,9 +1364,9 @@ function bindViewEvents(){
     };
   });
   document.querySelectorAll('[data-eliminar-registro]').forEach(el=>{
-    el.onclick = (e)=>{
+    el.onclick = async (e)=>{
       e.stopPropagation();
-      if(!confirm('¿Eliminar este turno por completo? No se puede deshacer.')) return;
+      if(!(await showConfirm('¿Eliminar este turno por completo? No se puede deshacer.', {danger:true, okText:'Eliminar'}))) return;
       const id = el.getAttribute('data-eliminar-registro');
       areaCol('registros').doc(id).delete()
         .then(()=>toast('Turno eliminado'))
@@ -1841,9 +1880,13 @@ function licPersonal(){
       <td>${escapeHtml(p.apellidos)}</td>
       <td>${escapeHtml(p.cargo||'')}</td>
       <td><input type="checkbox" data-toggle-activo="${p.id}" ${p.activo?'checked':''}></td>
-      <td>${p.email
-          ? `<span class="small">${escapeHtml(p.email)}</span><br><button class="btn btn-outline btn-sm" data-quitar-acceso-personal="${p.id}">Quitar acceso</button>`
-          : `<div class="form-row"><input type="email" placeholder="correo@gmail.com" id="emailAcceso_${p.id}" style="width:160px;"><button class="btn btn-outline btn-sm" data-dar-acceso-personal="${p.id}">Dar acceso</button></div>`}</td>
+      <td>
+        <div class="form-row">
+          <input type="email" placeholder="correo@gmail.com" id="emailAcceso_${p.id}" value="${escapeHtml(p.email||'')}" style="width:160px;">
+          <button class="btn btn-outline btn-sm" data-dar-acceso-personal="${p.id}">${p.email ? 'Guardar' : 'Dar acceso'}</button>
+        </div>
+        ${p.email ? `<button class="btn btn-outline btn-sm" style="margin-top:6px;" data-quitar-acceso-personal="${p.id}">Quitar acceso</button>` : ''}
+      </td>
       <td><button class="btn btn-outline btn-sm" data-del-personal="${p.id}">Eliminar</button></td>
     </tr>`).join('');
   return `
@@ -2083,7 +2126,7 @@ function bindLicenciadaEvents(){
     btnEliminarSeleccionResumen.onclick = async ()=>{
       const n = licSeleccionRegistros.size;
       if(!n) return;
-      if(!confirm('¿Eliminar '+n+' turno'+(n===1?'':'s')+' marcado'+(n===1?'':'s')+'? Se borran esos registros de actividades para siempre (no se puede deshacer). El personal, los pacientes, el catálogo y los accesos NO se tocan.')) return;
+      if(!(await showConfirm('¿Eliminar '+n+' turno'+(n===1?'':'s')+' marcado'+(n===1?'':'s')+'? Se borran esos registros de actividades para siempre (no se puede deshacer). El personal, los pacientes, el catálogo y los accesos NO se tocan.', {danger:true, okText:'Eliminar'}))) return;
       btnEliminarSeleccionResumen.disabled = true;
       try{
         const groups = buildResumenGroups();
@@ -2119,8 +2162,8 @@ function bindLicenciadaEvents(){
     };
   });
   document.querySelectorAll('[data-del-personal]').forEach(el=>{
-    el.onclick = ()=>{
-      if(!confirm('¿Eliminar este personal? Sus registros históricos se conservarán.')) return;
+    el.onclick = async ()=>{
+      if(!(await showConfirm('¿Eliminar este personal? Sus registros históricos se conservarán.', {danger:true, okText:'Eliminar'}))) return;
       const pid = el.getAttribute('data-del-personal');
       const p = STATE.personal.find(x=>x.id===pid);
       const batch = db.batch();
@@ -2150,9 +2193,9 @@ function bindLicenciadaEvents(){
     };
   });
   document.querySelectorAll('[data-quitar-acceso-personal]').forEach(el=>{
-    el.onclick = ()=>{
+    el.onclick = async ()=>{
       const pid = el.getAttribute('data-quitar-acceso-personal');
-      if(!confirm('¿Quitar el acceso directo de esta persona? Ya no podrá entrar con su correo (se le puede volver a asignar cuando quieran).')) return;
+      if(!(await showConfirm('¿Quitar el acceso directo de esta persona? Ya no podrá entrar con su correo (se le puede volver a asignar cuando quieran).', {danger:true, okText:'Quitar acceso'}))) return;
       setPersonalEmail(pid, '');
     };
   });
@@ -2179,8 +2222,8 @@ function bindLicenciadaEvents(){
     };
   });
   document.querySelectorAll('[data-del-paciente]').forEach(el=>{
-    el.onclick = ()=>{
-      if(!confirm('¿Eliminar este paciente? Los registros históricos que lo mencionan se conservarán.')) return;
+    el.onclick = async ()=>{
+      if(!(await showConfirm('¿Eliminar este paciente? Los registros históricos que lo mencionan se conservarán.', {danger:true, okText:'Eliminar'}))) return;
       areaCol('pacientes').doc(el.getAttribute('data-del-paciente')).delete()
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
     };
@@ -2215,9 +2258,9 @@ function bindLicenciadaEvents(){
     };
   }
   document.querySelectorAll('[data-del-email]').forEach(el=>{
-    el.onclick = ()=>{
+    el.onclick = async ()=>{
       const email = el.getAttribute('data-del-email');
-      if(!confirm('¿Quitar el acceso de '+email+'?')) return;
+      if(!(await showConfirm('¿Quitar el acceso de '+email+'?', {danger:true, okText:'Quitar acceso'}))) return;
       db.collection('authorized_emails').doc(email).delete()
         .then(()=>toast('Acceso retirado'))
         .catch(e=>{ console.error(e); toast('Error: '+e.message); });
@@ -2239,8 +2282,8 @@ function bindLicenciadaEvents(){
     };
   });
   document.querySelectorAll('[data-del-act]').forEach(el=>{
-    el.onclick = ()=>{
-      if(!confirm('¿Eliminar esta actividad del catálogo?')) return;
+    el.onclick = async ()=>{
+      if(!(await showConfirm('¿Eliminar esta actividad del catálogo?', {danger:true, okText:'Eliminar'}))) return;
       const [catId, actId] = el.getAttribute('data-del-act').split('|');
       const cat = STATE.catalogo.find(c=>c.id===catId);
       cat.actividades = cat.actividades.filter(a=>a.id!==actId);
@@ -2308,8 +2351,8 @@ function bindLicenciadaEvents(){
   const btnResetAll = document.getElementById('btnResetAll');
   if(btnResetAll){
     btnResetAll.onclick = async ()=>{
-      if(!confirm('Esto borrará TODOS los registros, personal, pacientes y catálogo. Como los datos están en la nube, esto afecta a TODO el equipo, no solo a este navegador. ¿Continuar?')) return;
-      if(!confirm('Confirma nuevamente: esta acción no se puede deshacer.')) return;
+      if(!(await showConfirm('Esto borrará TODOS los registros, personal, pacientes y catálogo. Como los datos están en la nube, esto afecta a TODO el equipo, no solo a este navegador. ¿Continuar?', {danger:true, okText:'Continuar'}))) return;
+      if(!(await showConfirm('Confirma nuevamente: esta acción no se puede deshacer.', {danger:true, okText:'Sí, borrar todo'}))) return;
       btnResetAll.disabled = true;
       try{
         await wipeFirestoreData();
